@@ -1,9 +1,9 @@
-export interface OpenAI35Message {
+interface OpenAI35Message {
     role: string,
     content: string,
 }
 
-export interface OpenAI35Response {
+interface OpenAI35Response {
     id: string;
     object: string;
     created: number;
@@ -21,7 +21,7 @@ export interface OpenAI35Response {
 }
 
 
-export class OpenAI {
+class OpenAI {
     static MODELS = {
         GPT35TURBO: 'gpt-3.5-turbo',
     } as const;

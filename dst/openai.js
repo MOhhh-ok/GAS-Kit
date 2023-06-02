@@ -1,6 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpenAI = void 0;
 class OpenAI {
     // constructor
     constructor(params) {
@@ -38,7 +36,6 @@ OpenAI.ROLES = {
     ASSISTANT: 'assistant',
     USER: 'user',
 };
-exports.OpenAI = OpenAI;
 function OpenAITest() {
     const test = new OpenAI({
         model: OpenAI.MODELS.GPT35TURBO,

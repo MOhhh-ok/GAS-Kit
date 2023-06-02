@@ -1,0 +1,59 @@
+<style>
+    #progress {
+        background-color: #ccf;
+        font-size: .8em;
+        padding: .5em;
+        text-align: center;
+        display: none;
+    }
+
+    #log {
+        padding: 1em;
+        width: 90vw;
+        height: 60vh;
+    }
+</style>
+
+<script>
+
+    function onSuccess(obj) {
+
+        // progress
+        const progBox = document.querySelector('#progress');
+        progBox.textContent = obj.progress + '/' + obj.total;
+        if (obj.total) {
+            progBox.style.display = 'block';
+        }
+
+        // log
+        const logBox = document.querySelector('#log');
+        logBox.value = obj.log;
+        logBox.scrollTop = logBox.scrollHeight;
+
+        // close
+        if (obj.fin) {
+            google.script.host.close();
+        }
+    }
+
+    function onTime() {
+        try {
+            // call server function
+            google.script.run.withSuccessHandler(onSuccess).progressGetData();
+            setTimeout(onTime, 1000);
+        } catch (e) {
+            // alert(e);
+        }
+    }
+
+    // init
+    function onInit() {
+        onTime();
+    }
+    document.addEventListener('DOMContentLoaded', onInit);
+
+</script>
+
+
+<div id='progress'></div>
+<textarea disabled id='log'></textarea>

@@ -3,26 +3,25 @@ type DriveUtilitiesFormat = 'docx' | 'pdf' | 'txt' | 'rtf' | 'html' | 'odt' | 'p
 class _DriveUtilities {
 
     // ファイルを変換する
-    convert(fileId: string, format: DriveUtilitiesFormat): GoogleAppsScript.Base.Blob {
+    convert(file: GoogleAppsScript.Drive.File, format: DriveUtilitiesFormat): GoogleAppsScript.Base.Blob {
         const fetchOpt = {
             "headers": { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
             "muteHttpExceptions": true
         };
-        const fetchUrl = 'https://docs.google.com/document/d/' + fileId + '/export?format=' + format;
+        const fetchUrl = 'https://docs.google.com/document/d/' + file.getId() + '/export?format=' + format;
         return UrlFetchApp.fetch(fetchUrl, fetchOpt).getBlob();
     }
 
     // ファイルを変換して保存する
-    export(fileId: string, format: DriveUtilitiesFormat, dstFolder: GoogleAppsScript.Drive.Folder): void {
-        const fileName = DriveApp.getFileById(fileId).getName();
-        const newName = this.replaceExtention(fileName, format);
-        const blob = this.convert(fileId, format);
+    export(file: GoogleAppsScript.Drive.File, format: DriveUtilitiesFormat, dstFolder: GoogleAppsScript.Drive.Folder): void {
+        const fileName = file.getName();
+        const newName = this.replaceExtentionString(fileName, format);
+        const blob = this.convert(file, format);
         dstFolder.createFile(blob).setName(newName);
     }
 
     // ファイルを移動する
-    move(fileId: string, dstFolder: GoogleAppsScript.Drive.Folder): void {
-        const file = DriveApp.getFileById(fileId);
+    move(file: GoogleAppsScript.Drive.File, dstFolder: GoogleAppsScript.Drive.Folder): void {
         dstFolder.addFile(file);
         file.getParents().next().removeFile(file);
     }
@@ -37,7 +36,7 @@ class _DriveUtilities {
     }
 
     // 拡張子を変更する
-    replaceExtention(fileName: string, newExtension: string): string {
+    replaceExtentionString(fileName: string, newExtension: string): string {
         const regex = /\.[^/.]+$/;
         const ext = fileName.match(regex);
         if (!ext) {

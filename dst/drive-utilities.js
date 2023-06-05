@@ -1,24 +1,23 @@
 "use strict";
 class _DriveUtilities {
     // ファイルを変換する
-    convert(fileId, format) {
+    convert(file, format) {
         const fetchOpt = {
             "headers": { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
             "muteHttpExceptions": true
         };
-        const fetchUrl = 'https://docs.google.com/document/d/' + fileId + '/export?format=' + format;
+        const fetchUrl = 'https://docs.google.com/document/d/' + file.getId() + '/export?format=' + format;
         return UrlFetchApp.fetch(fetchUrl, fetchOpt).getBlob();
     }
     // ファイルを変換して保存する
-    export(fileId, format, dstFolder) {
-        const fileName = DriveApp.getFileById(fileId).getName();
-        const newName = this.replaceExtention(fileName, format);
-        const blob = this.convert(fileId, format);
+    export(file, format, dstFolder) {
+        const fileName = file.getName();
+        const newName = this.replaceExtentionString(fileName, format);
+        const blob = this.convert(file, format);
         dstFolder.createFile(blob).setName(newName);
     }
     // ファイルを移動する
-    move(fileId, dstFolder) {
-        const file = DriveApp.getFileById(fileId);
+    move(file, dstFolder) {
         dstFolder.addFile(file);
         file.getParents().next().removeFile(file);
     }
@@ -31,7 +30,7 @@ class _DriveUtilities {
         return parentFolder.createFolder(folderName);
     }
     // 拡張子を変更する
-    replaceExtention(fileName, newExtension) {
+    replaceExtentionString(fileName, newExtension) {
         const regex = /\.[^/.]+$/;
         const ext = fileName.match(regex);
         if (!ext) {

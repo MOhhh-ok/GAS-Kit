@@ -21,9 +21,10 @@ class _DriveUtilities {
     }
 
     // ファイルを移動する
-    move(file: GoogleAppsScript.Drive.File, dstFolder: GoogleAppsScript.Drive.Folder): void {
-        dstFolder.addFile(file);
+    move(file: GoogleAppsScript.Drive.File, dstFolder: GoogleAppsScript.Drive.Folder): GoogleAppsScript.Drive.File {
+        const newFile=file.makeCopy(dstFolder);
         file.getParents().next().removeFile(file);
+        return newFile;
     }
 
     // フォルダを作成する

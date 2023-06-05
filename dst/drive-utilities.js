@@ -18,8 +18,9 @@ class _DriveUtilities {
     }
     // ファイルを移動する
     move(file, dstFolder) {
-        dstFolder.addFile(file);
+        const newFile = file.makeCopy(dstFolder);
         file.getParents().next().removeFile(file);
+        return newFile;
     }
     // フォルダを作成する
     createFolder(folderName, parentFolder) {

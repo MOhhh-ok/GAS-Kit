@@ -1,10 +1,10 @@
-interface Price{
+interface EtsyPrice {
     amount: number; // The amount of represented by this data.
     divisor: number; // >= 0 The divisor to render the amount.
     currency_code: string // The ISO currency code for this data.
 }
 
-interface Listing {
+interface EtsyListing {
     listing_id: number; // must be >= 1
     user_id: number; // must be >= 1
     shop_id: number; // must be >= 1
@@ -52,12 +52,12 @@ interface Listing {
     has_variations: boolean;
     should_auto_renew: boolean;
     language: string | null;
-    price: Price;
+    price: EtsyPrice;
     taxonomy_id: number | null;
 }
 
 
-interface findAllActiveListingsByShopRequest {
+interface EtsyfindAllActiveListingsByShopRequest {
     limit?: number; // [ 1 .. 100 ], default is 25
     sort_on?: 'created' | 'price' | 'updated' | 'score'; // default is "created"
     sort_order?: 'asc' | 'ascending' | 'desc' | 'descending' | 'up' | 'down'; // default is "desc"
@@ -65,7 +65,7 @@ interface findAllActiveListingsByShopRequest {
     keywords?: string; // default is null
 }
 
-interface findAllActiveListingsByShopResponse {
+interface EtsyfindAllActiveListingsByShopResponse {
     count: number;
-    results: Listing[];
+    results: EtsyListing[];
 }

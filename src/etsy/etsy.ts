@@ -80,7 +80,7 @@ class Etsy {
         console.log(JSON.stringify(json, null, 2));
     }
 
-    findAllActiveListingsByShop(shopId: string, params: findAllActiveListingsByShopRequest = {}): findAllActiveListingsByShopResponse {
+    findAllActiveListingsByShop(shopId: string, params: EtsyfindAllActiveListingsByShopRequest = {}): EtsyfindAllActiveListingsByShopResponse {
         const path = "application/shops/" + shopId + "/listings/active";
         const json = this.requestJson("get", path);
         return json;

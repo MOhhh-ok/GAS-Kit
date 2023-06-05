@@ -20,6 +20,22 @@ class _DriveUtilities {
         dstFolder.createFile(blob).setName(newName);
     }
 
+    // ファイルを移動する
+    move(fileId: string, dstFolder: GoogleAppsScript.Drive.Folder): void {
+        const file = DriveApp.getFileById(fileId);
+        dstFolder.addFile(file);
+        file.getParents().next().removeFile(file);
+    }
+
+    // フォルダを作成する
+    createFolder(folderName: string, parentFolder: GoogleAppsScript.Drive.Folder): GoogleAppsScript.Drive.Folder {
+        const folders = parentFolder.getFoldersByName(folderName);
+        if (folders.hasNext()) {
+            return folders.next();
+        }
+        return parentFolder.createFolder(folderName);
+    }
+
     // 拡張子を変更する
     replaceExtention(fileName: string, newExtension: string): string {
         const regex = /\.[^/.]+$/;

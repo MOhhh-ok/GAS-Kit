@@ -86,11 +86,21 @@ class Etsy {
         return json;
     }
 
+    getListing(listingId: string): EtsyListing {
+        const path = "application/listings/" + listingId;
+        const json = this.requestJson("get", path);
+        return json;
+    }
+
 }
 
 function etsyTest() {
     const test = new Etsy();
-    const data = test.findAllActiveListingsByShop("14355593");
+    let data;
+    data = test.getListing("1414742404");
+    console.log(JSON.stringify(data, null, 2));
+    return;
+    data = test.findAllActiveListingsByShop("14355593");
     console.log(JSON.stringify(data, null, 2));
     return;
     test.getUsers();

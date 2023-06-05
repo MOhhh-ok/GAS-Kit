@@ -39,7 +39,7 @@
     function onTime() {
         try {
             // call server function
-            google.script.run.withSuccessHandler(onSuccess).progressGetData();
+            google.script.run.withSuccessHandler(onSuccess).progressDlgGetData();
             setTimeout(onTime, 1000);
         } catch (e) {
             // alert(e);

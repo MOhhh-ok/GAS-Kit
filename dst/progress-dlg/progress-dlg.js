@@ -1,6 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.progressGetData = exports.ProgressDlg = void 0;
 /****************************************************************
  * Edit below. SpreadsheetApp, DocumentApp, SlidesApp, or FormApp;
  */
@@ -94,7 +92,6 @@ class ProgressDlg {
         this.Ui.showModalDialog(HtmlService.createHtmlOutputFromFile('progress-dlg'), title);
     }
 }
-exports.ProgressDlg = ProgressDlg;
 /**
  * global function. call from html
  */
@@ -102,7 +99,6 @@ function progressGetData() {
     const progress = new ProgressDlg({ fromHtml: true });
     return progress.loadData();
 }
-exports.progressGetData = progressGetData;
 /**
  * test
  */

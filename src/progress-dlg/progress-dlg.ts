@@ -33,7 +33,7 @@ const APP = SpreadsheetApp;
 /**
  * Progress data structure
  */
-export interface ProgressDlgData {
+ interface ProgressDlgData {
     total: number,
     progress: number,
     log: string,
@@ -43,7 +43,7 @@ export interface ProgressDlgData {
 /**
  * Progress class
  */
-export class ProgressDlg {
+ class ProgressDlg {
     // instance
     static instance: ProgressDlg;
 
@@ -170,7 +170,7 @@ export class ProgressDlg {
 /**
  * global function. call from html
  */
-export function progressGetData() {
+ function progressDlgGetData() {
     const progress = new ProgressDlg({ fromHtml: true });
     return progress.loadData();
 }

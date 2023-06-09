@@ -22,18 +22,30 @@ class _DriveUtilities {
 
     // ファイルを移動する
     move(file: GoogleAppsScript.Drive.File, dstFolder: GoogleAppsScript.Drive.Folder): GoogleAppsScript.Drive.File {
-        const newFile=file.makeCopy(dstFolder);
+        const newFile = file.makeCopy(dstFolder);
         file.getParents().next().removeFile(file);
         return newFile;
     }
 
-    // フォルダを作成する
-    createFolder(folderName: string, parentFolder: GoogleAppsScript.Drive.Folder): GoogleAppsScript.Drive.Folder {
-        const folders = parentFolder.getFoldersByName(folderName);
-        if (folders.hasNext()) {
-            return folders.next();
+    // フォルダを取得。存在しなければ作成する
+    getFolder(folderName: string, parent: GoogleAppsScript.Drive.Folder): GoogleAppsScript.Drive.Folder {
+        const folder = parent.getFoldersByName(folderName);
+        if (!folder.hasNext()) {
+            return parent.createFolder(folderName);
         }
-        return parentFolder.createFolder(folderName);
+        return folder.next();
+    }
+
+    // ファイルを取得。存在しなければ作成する(オプション)
+    getFile(fileName: string, parent: GoogleAppsScript.Drive.Folder, create: boolean = false): GoogleAppsScript.Drive.File {
+        const files = parent.getFilesByName(fileName);
+        if (files.hasNext()) {
+            return files.next();
+        }
+        if (create) {
+            return parent.createFile(fileName, '');
+        }
+        throw new Error('ファイルが見つかりません。' + fileName);
     }
 
     // 拡張子を変更する

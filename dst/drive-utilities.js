@@ -22,13 +22,52 @@ class _DriveUtilities {
         file.getParents().next().removeFile(file);
         return newFile;
     }
-    // フォルダを作成する
-    createFolder(folderName, parentFolder) {
-        const folders = parentFolder.getFoldersByName(folderName);
-        if (folders.hasNext()) {
-            return folders.next();
+    // フォルダを取得。存在しなければ作成する
+    getFolder(folderName, parent) {
+        const folder = parent.getFoldersByName(folderName);
+        if (!folder.hasNext()) {
+            return parent.createFolder(folderName);
         }
-        return parentFolder.createFolder(folderName);
+        return folder.next();
+    }
+    // ファイルを取得。存在しなければ作成する(オプション)
+    getFile(fileName, parent, create = false) {
+        const files = parent.getFilesByName(fileName);
+        if (files.hasNext()) {
+            return files.next();
+        }
+        if (create) {
+            return parent.createFile(fileName, '');
+        }
+        throw new Error('ファイルが見つかりません。' + fileName);
+    }
+    // 実行ファイルのあるフォルダを取得
+    getScriptFolder() {
+        // 自身のファイル
+        const scriptId = ScriptApp.getScriptId();
+        const selfFile = DriveApp.getFileById(scriptId);
+        // イテレータ
+        const parentsIterator = selfFile.getParents();
+        // フォルダを配列に格納
+        const parents = [];
+        while (parentsIterator.hasNext()) {
+            parents.push(parentsIterator.next());
+        }
+        // 候補が１つなら返す
+        if (parents.length == 1) {
+            return parents[0];
+        }
+        // 複数なら精査する
+        for (let parent of parents) {
+            const filesIterator = parent.getFilesByName(selfFile.getName());
+            while (filesIterator.hasNext()) {
+                const file = filesIterator.next();
+                if (file.getId() == scriptId) {
+                    return parent;
+                }
+            }
+        }
+        throw new Error('実行フォルダを取得できませんでした。');
     }
     // 拡張子を変更する
     replaceExtentionString(fileName, newExtension) {
@@ -41,3 +80,6 @@ class _DriveUtilities {
     }
 }
 const DriveUtilities = new _DriveUtilities();
+function driveUtilitiesTest() {
+    console.log(DriveUtilities.getScriptFolder().getName());
+}

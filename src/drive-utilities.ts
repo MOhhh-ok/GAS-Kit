@@ -48,6 +48,39 @@ class _DriveUtilities {
         throw new Error('ファイルが見つかりません。' + fileName);
     }
 
+    // 実行ファイルのあるフォルダを取得
+    getScriptFolder(): GoogleAppsScript.Drive.Folder {
+        // 自身のファイル
+        const scriptId = ScriptApp.getScriptId();
+        const selfFile = DriveApp.getFileById(scriptId);
+
+        // イテレータ
+        const parentsIterator = selfFile.getParents();
+
+        // フォルダを配列に格納
+        const parents: GoogleAppsScript.Drive.Folder[] = [];
+        while (parentsIterator.hasNext()) {
+            parents.push(parentsIterator.next());
+        }
+
+        // 候補が１つなら返す
+        if (parents.length == 1) {
+            return parents[0];
+        }
+
+        // 複数なら精査する
+        for (let parent of parents) {
+            const filesIterator = parent.getFilesByName(selfFile.getName());
+            while (filesIterator.hasNext()) {
+                const file = filesIterator.next();
+                if (file.getId() == scriptId) {
+                    return parent;
+                }
+            }
+        }
+        throw new Error('実行フォルダを取得できませんでした。');
+    }
+
     // 拡張子を変更する
     replaceExtentionString(fileName: string, newExtension: string): string {
         const regex = /\.[^/.]+$/;
@@ -60,3 +93,8 @@ class _DriveUtilities {
 }
 
 const DriveUtilities = new _DriveUtilities();
+
+
+function driveUtilitiesTest(){
+    console.log(DriveUtilities.getScriptFolder().getName());
+}

@@ -1,7 +1,7 @@
 "use strict";
 class GMap {
     cmbParams(p) {
-        return Object.entries(p).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+        return Object.entries(p).map(([k, v]) => `${String(k)}=${encodeURIComponent(String(v))}`).join('&');
     }
     request(path, params) {
         const prop = PropertiesService.getScriptProperties();

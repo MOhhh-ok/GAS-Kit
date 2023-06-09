@@ -95,7 +95,7 @@ class ProgressDlg {
 /**
  * global function. call from html
  */
-function progressGetData() {
+function progressDlgGetData() {
     const progress = new ProgressDlg({ fromHtml: true });
     return progress.loadData();
 }

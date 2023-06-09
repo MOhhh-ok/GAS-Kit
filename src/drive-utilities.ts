@@ -51,12 +51,8 @@ class _DriveUtilities {
         throw new Error('ファイルが見つかりません。' + fileName);
     }
 
-    // 実行ファイルのあるフォルダを取得
-    getScriptFolder(): GoogleAppsScript.Drive.Folder {
-        // 自身のファイル
-        const scriptId = ScriptApp.getScriptId();
-        const selfFile = DriveApp.getFileById(scriptId);
-
+    // 親フォルダを取得(IDチェックあり)
+    getParent(selfFile: GoogleAppsScript.Drive.File): GoogleAppsScript.Drive.Folder {
         // イテレータ
         const parentsIterator = selfFile.getParents();
 
@@ -76,12 +72,12 @@ class _DriveUtilities {
             const filesIterator = parent.getFilesByName(selfFile.getName());
             while (filesIterator.hasNext()) {
                 const file = filesIterator.next();
-                if (file.getId() == scriptId) {
+                if (file.getId() == selfFile.getId()) {
                     return parent;
                 }
             }
         }
-        throw new Error('実行フォルダを取得できませんでした。');
+        throw new Error('親フォルダを取得できませんでした。'+selfFile.getName());
     }
 
     // 拡張子を変更する

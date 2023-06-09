@@ -28,12 +28,15 @@ class _DriveUtilities {
     }
 
     // フォルダを取得。存在しなければ作成する
-    getFolder(folderName: string, parent: GoogleAppsScript.Drive.Folder): GoogleAppsScript.Drive.Folder {
+    getFolder(folderName: string, parent: GoogleAppsScript.Drive.Folder, create: boolean = false): GoogleAppsScript.Drive.Folder {
         const folder = parent.getFoldersByName(folderName);
-        if (!folder.hasNext()) {
+        if (folder.hasNext()) {
+            return folder.next();
+        }
+        if (create) {
             return parent.createFolder(folderName);
         }
-        return folder.next();
+        throw new Error('フォルダが見つかりません。' + folderName);
     }
 
     // ファイルを取得。存在しなければ作成する(オプション)
@@ -95,6 +98,6 @@ class _DriveUtilities {
 const DriveUtilities = new _DriveUtilities();
 
 
-function driveUtilitiesTest(){
+function driveUtilitiesTest() {
     console.log(DriveUtilities.getScriptFolder().getName());
 }

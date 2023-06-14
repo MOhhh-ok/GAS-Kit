@@ -3,8 +3,8 @@ class OpenAIMemory {
     cache: GoogleAppsScript.Cache.Cache;
     max: number;
 
-    constructor(max: number) {
-        this.cacheKey = 'openai-memory-user';
+    constructor(max: number, cacheKey?: string) {
+        this.cacheKey = cacheKey ? cacheKey : 'openai-memory-user';
         this.cache = CacheService.getUserCache();
         this.max = max;
     }

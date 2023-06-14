@@ -12,12 +12,13 @@ class OpenAI {
         maxTokens: number,
         temperature: number,
         memoryMax?: number,
+        memoryCacheKey?: string,
     }) {
         this.secretKey = PropertiesService.getScriptProperties().getProperty('OPENAI_SECRET_KEY') || '';
         this.model = params.model;
         this.maxTokens = params.maxTokens;
         this.temperature = params.temperature;
-        this.memory = new OpenAIMemory(params.memoryMax || 1);
+        this.memory = new OpenAIMemory(params.memoryMax || 1, params.memoryCacheKey);
     }
 
     joinMemory(messages: OpenAIMessage[]) {

@@ -20,7 +20,7 @@ class OpenAI {
         this.model = params.model;
         this.maxTokens = params.maxTokens;
         this.temperature = params.temperature;
-        this.memory = new OpenAIMemory(params.memoryMax || 1, params.memoryCacheKey);
+        this.memory = new OpenAIMemory(params.memoryMax || 1, 60 * 10, params.memoryCacheKey);
         this.stickeyMessage = params.stickyMessage;
     }
 

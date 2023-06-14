@@ -1,8 +1,8 @@
 class SheetLogger {
     sheet: GoogleAppsScript.Spreadsheet.Sheet;
 
-    constructor(sheetName: string, maxNum: number = 100) {
-        const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('logs');
+    constructor(sheetName: string = 'logs', maxNum: number = 100) {
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
         if (!sheet) {
             throw new Error('logsシートが存在しません。');
         }

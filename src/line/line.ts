@@ -21,7 +21,7 @@ class LINE {
             payload: JSON.stringify(payload),
             method: 'post',
             headers: {
-                Authorization: "Bearer " + prop.getProperty('LINE_CHANNEL_SECRET'),
+                Authorization: "Bearer " + prop.getProperty('LINE_CHANNEL_ACCESS'),
             },
             contentType: 'application/json'
         };

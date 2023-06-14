@@ -21,8 +21,8 @@ class OpenAI {
         this.memory = new OpenAIMemory(params.memoryMax || 1, params.memoryCacheKey);
     }
 
-    joinMemory(messages: OpenAIMessage[]) {
-        messages.forEach((message) => this.memory.add(message));
+    addMemory(message: OpenAIMessage) {
+        this.memory.add(message);
         return this.memory.get();
     }
 
@@ -33,7 +33,7 @@ class OpenAI {
             model: this.model,
             max_tokens: this.maxTokens,
             temperature: this.temperature,
-            messages: this.joinMemory(messages),
+            messages: this.addMemory(messages),
         };
         console.info(JSON.stringify(payload, null, 2));
 
@@ -44,8 +44,9 @@ class OpenAI {
         };
 
         const txt = UrlFetchApp.fetch(url, options).getContentText();
-        const result = JSON.parse(txt);
+        const result:OpenAI35Response = JSON.parse(txt);
         console.info(JSON.stringify(result, null, 2));
+        this.addMemory(result.choices[0].message);
         return result;
     }
 }

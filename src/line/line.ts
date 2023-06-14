@@ -29,12 +29,20 @@ class LINE {
     }
 
     /**
-     * place this on doPost
+     * Place this on doPost
      */
     doPost(args: { postData: { contents: string } }) {
+        const cache = CacheService.getScriptCache();
         const hookedData: LINEWebhookData = JSON.parse(args.postData.contents);
+
         for (let event of hookedData.events) {
+            // Ignore duplicated event
+            const cacheKey = 'LINEWebhookEventId:' + event.webhookEventId;
+            if (cache.get(cacheKey)) {
+                continue;
+            }
             this.onWebhookEvent!(event);
+            cache.put(cacheKey, '1', 60 * 10);
         }
     }
 }

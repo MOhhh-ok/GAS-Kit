@@ -15,8 +15,21 @@ interface LINESourceRoom {
     userId?: string,
 }
 
+interface LINEAction {
+    type: 'message' | 'postback' | 'uri' | 'datetimepicker' | 'location';
+    label: string;
+    text?: string;
+    uri?: string;
+}
+
 interface LINEMessage {
     type: 'text' | 'image' | 'video' | 'audio' | 'location' | 'sticker' | 'imagemap' | 'template' | 'flex';
+    quickReply?: {
+        items: {
+            type: 'action',
+            action: LINEAction,
+        }[];
+    };
 }
 
 interface LINEEvent {
@@ -33,11 +46,17 @@ interface LINEEvent {
 }
 
 // テキストイベント
-interface LINETextMessage extends LINEMessage {
+interface LINEEventTextMessage extends LINEMessage {
     type: 'text',
     id: string,
     text: string,
 }
+
+interface LINETextMessage extends LINEMessage {
+    type: 'text',
+    text: string,
+}
+
 
 interface LINEWebhookData {
     destination: string;

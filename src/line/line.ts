@@ -7,16 +7,14 @@ class LINE {
         }
     }
 
-    send(args: { replyToken: string, text: string, }) {
+    send(args: { replyToken: string, messages: LINEMessage[] }) {
         const prop = PropertiesService.getScriptProperties();
 
         const payload = {
             replyToken: args.replyToken,
-            messages: [{
-                type: 'text',
-                text: args.text,
-            }]
+            messages: args.messages,
         };
+
         const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
             payload: JSON.stringify(payload),
             method: 'post',

@@ -2,6 +2,7 @@ enum OpenAI35Role {
     SYSTEM = "system",
     ASSISTANT = "assistant",
     USER = "user",
+    FUNCTION = 'function',
 }
 
 enum OpenAIModels {
@@ -17,6 +18,21 @@ interface OpenAI35Message extends OpenAIMessage {
     content: string,
 }
 
+interface OpenAIFunction {
+    name: string;
+    description: string;
+    parameters: {
+        type: string;
+        properties: {
+            query: {
+                type: string;
+                description: string;
+            };
+        };
+        required: string[];
+    };
+}
+
 interface OpenAI35Response {
     id: string;
     object: string;
@@ -29,7 +45,7 @@ interface OpenAI35Response {
     };
     choices: {
         message: OpenAI35Message;
-        finish_reason: string;
+        finish_reason: "stop" | "length" | "function_call" | "content_filter" | "null";
         index: number;
     }[];
 }

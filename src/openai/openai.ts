@@ -21,24 +21,21 @@ class OpenAI {
         this.model = params.model;
         this.maxTokens = params.maxTokens;
         this.temperature = params.temperature;
-        this.memory = new OpenAIMemory(params.memoryMax || 1, 60 * 10, params.memoryCacheKey);
+        this.memory = new OpenAIMemory(params.memoryMax || 0, 60 * 10, params.memoryCacheKey);
         this.stickeyMessage = params.stickyMessage;
     }
 
-    addMemory(message: OpenAIMessage) {
-        this.memory.add(message);
-        return this.memory.get();
-    }
-
     // chat
-    chat35(message: OpenAI35Message): OpenAI35Response {
+    chat35(messages: OpenAI35Message[]): OpenAI35Response {
         const url = "https://api.openai.com/v1/chat/completions";
 
-        const messages = this.addMemory(message);
+        // generate message
+        const newMessages = [...this.memory.get(), ...messages];
         if (this.stickeyMessage) {
-            messages.unshift(this.stickeyMessage);
+            newMessages.unshift(this.stickeyMessage);
         }
 
+        // request
         const payload = {
             model: this.model,
             max_tokens: this.maxTokens,
@@ -53,10 +50,15 @@ class OpenAI {
             payload: JSON.stringify(payload),
         };
 
+        // response
         const txt = UrlFetchApp.fetch(url, options).getContentText();
         const result: OpenAI35Response = JSON.parse(txt);
         console.info(JSON.stringify(result, null, 2));
-        this.addMemory(result.choices[0].message);
+
+        // add memory
+        messages.forEach(m => this.memory.add(m));
+        this.memory.add(result.choices[0].message);
+
         return result;
     }
 }

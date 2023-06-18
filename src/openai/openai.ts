@@ -1,6 +1,6 @@
 
 class OpenAI {
-    secretKey: string;
+    apiKey: string;
     model: string;
     maxTokens: number; // max token of answer. question and answer takes 4097 tokens at most.
     temperature: number; // 0.0 ~ 1.0
@@ -12,11 +12,12 @@ class OpenAI {
         model: string,
         maxTokens: number,
         temperature: number,
+        apiKey?: string,
         memoryMax?: number,
         memoryCacheKey?: string,
         stickyMessage?: OpenAIMessage,
     }) {
-        this.secretKey = PropertiesService.getScriptProperties().getProperty('OPENAI_SECRET_KEY') || '';
+        this.apiKey = params.apiKey || PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY') || '';
         this.model = params.model;
         this.maxTokens = params.maxTokens;
         this.temperature = params.temperature;
@@ -48,7 +49,7 @@ class OpenAI {
 
         const options = {
             contentType: "application/json",
-            headers: { Authorization: "Bearer " + this.secretKey },
+            headers: { Authorization: "Bearer " + this.apiKey },
             payload: JSON.stringify(payload),
         };
 

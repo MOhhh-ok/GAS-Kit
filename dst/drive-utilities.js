@@ -23,12 +23,15 @@ class _DriveUtilities {
         return newFile;
     }
     // フォルダを取得。存在しなければ作成する
-    getFolder(folderName, parent) {
+    getFolder(folderName, parent, create = false) {
         const folder = parent.getFoldersByName(folderName);
-        if (!folder.hasNext()) {
+        if (folder.hasNext()) {
+            return folder.next();
+        }
+        if (create) {
             return parent.createFolder(folderName);
         }
-        return folder.next();
+        throw new Error('フォルダが見つかりません。' + folderName);
     }
     // ファイルを取得。存在しなければ作成する(オプション)
     getFile(fileName, parent, create = false) {
@@ -41,11 +44,8 @@ class _DriveUtilities {
         }
         throw new Error('ファイルが見つかりません。' + fileName);
     }
-    // 実行ファイルのあるフォルダを取得
-    getScriptFolder() {
-        // 自身のファイル
-        const scriptId = ScriptApp.getScriptId();
-        const selfFile = DriveApp.getFileById(scriptId);
+    // 親フォルダを取得(IDチェックあり)
+    getParent(selfFile) {
         // イテレータ
         const parentsIterator = selfFile.getParents();
         // フォルダを配列に格納
@@ -62,12 +62,12 @@ class _DriveUtilities {
             const filesIterator = parent.getFilesByName(selfFile.getName());
             while (filesIterator.hasNext()) {
                 const file = filesIterator.next();
-                if (file.getId() == scriptId) {
+                if (file.getId() == selfFile.getId()) {
                     return parent;
                 }
             }
         }
-        throw new Error('実行フォルダを取得できませんでした。');
+        throw new Error('親フォルダを取得できませんでした。' + selfFile.getName());
     }
     // 拡張子を変更する
     replaceExtentionString(fileName, newExtension) {

@@ -22,14 +22,18 @@ interface LINEAction {
     uri?: string;
 }
 
+interface LINEQuickReplyItem {
+    type: 'action',
+    action: LINEAction,
+}
+
+interface LINEQuickReply {
+    items: LINEQuickReplyItem[];
+}
+
 interface LINEMessage {
     type: 'text' | 'image' | 'video' | 'audio' | 'location' | 'sticker' | 'imagemap' | 'template' | 'flex';
-    quickReply?: {
-        items: {
-            type: 'action',
-            action: LINEAction,
-        }[];
-    };
+    quickReply?: LINEQuickReply;
 }
 
 interface LINEEvent {

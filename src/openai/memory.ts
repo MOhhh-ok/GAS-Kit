@@ -17,8 +17,12 @@ class OpenAIMemory {
     }
 
     set(messages: OpenAIMessage[]) {
-        const sliced = messages.slice(messages.length - this.max);
-        this.cache.put(this.cacheKey, JSON.stringify(sliced), this.expirationInSeconds);
+        const messages2 = [...messages];
+        if (messages2.length > this.max) {
+            messages2.splice(0, messages2.length - this.max);
+        }
+
+        this.cache.put(this.cacheKey, JSON.stringify(messages2), this.expirationInSeconds);
     }
 
     add(message: OpenAIMessage) {
@@ -26,4 +30,16 @@ class OpenAIMemory {
         messages.push(message);
         this.set(messages);
     }
+}
+
+function OpenAIMemoryTest() {
+    const memory = new OpenAIMemory(3);
+    memory.add({
+        role: OpenAI35Role.USER,
+        content: 'こんにちは。今は' + new Date() + 'です。',
+    });
+
+    const res = memory.get();
+    console.log(JSON.stringify(res, null, 2));
+
 }

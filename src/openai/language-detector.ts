@@ -7,7 +7,7 @@ class OpenAILanguageDetector {
   // constructor
   constructor() {
     this.ai = new OpenAI({
-      model: OpenAIModels.GPT35TURBO,
+      model: OpenAIModels.GPT4,
       maxTokens: 100, // 回答最大トークン。マックス4097(質問と回答合わせて??)
       temperature: 0,
       memoryCacheKey: String(new Date().getTime()), // 通常の会話と区別するために日付をキーにする
@@ -35,6 +35,6 @@ class OpenAILanguageDetector {
 
 function openAILanguegeDetectorTest() {
   const detector = new OpenAILanguageDetector();
-  const lang = detector.detect('吾輩は猫である');
+  const lang = detector.detect('私は法人です');
   console.log(lang);
 }

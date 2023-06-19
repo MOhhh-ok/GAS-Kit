@@ -9,4 +9,5 @@ var OpenAI35Role;
 var OpenAIModels;
 (function (OpenAIModels) {
     OpenAIModels["GPT35TURBO"] = "gpt-3.5-turbo";
+    OpenAIModels["GPT4"] = "gpt-4";
 })(OpenAIModels || (OpenAIModels = {}));

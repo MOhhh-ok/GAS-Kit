@@ -2,11 +2,11 @@ class SheetLogger {
     sheet: GoogleAppsScript.Spreadsheet.Sheet;
 
     constructor(args: {
-        sheet?: GoogleAppsScript.Spreadsheet.Sheet,
+        sheet: GoogleAppsScript.Spreadsheet.Sheet | null,
         maxNum?: number,
     }) {
         if (!args.sheet) {
-            throw new Error('sheetが指定されていません。');
+            throw new Error('sheetがありません。');
         }
         this.sheet = args.sheet;
 
@@ -14,7 +14,7 @@ class SheetLogger {
         const rows = this.sheet.getLastRow();
         const maxNum = args.maxNum || 100;
         if (rows > maxNum) {
-            this.sheet.deleteRows(1, maxNum - rows);
+            this.sheet.deleteRows(1, rows - maxNum);
         }
     }
 
@@ -27,13 +27,25 @@ class SheetLogger {
         this.sheet.appendRow(row);
     }
 
-    // console.log時に呼ばれるようにする
-    hookConsole() {
+    // Logger.log時に呼ばれるようにする
+    hookLogger() {
         const self = this;
-        const originalLog = console.log;
-        console.log = function (text: string) {
-            originalLog.apply(console, arguments);
+        const originalLog = Logger.log;
+        Logger.log = function (text: string) {
+            //originallob bind
+            originalLog.bind(Logger)(text);
             self.log(text);
-        } as Console['log'];
+        } as any;
     }
+}
+
+
+function sheetLoggerTest() {
+    const aaa = new SheetLogger({
+        sheet: SpreadsheetApp.getActive().getSheetByName('logs'),
+        maxNum: 10,
+    });
+
+    aaa.hookLogger();
+    Logger.log(new Date());
 }

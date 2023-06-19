@@ -6,7 +6,7 @@ class OpenAILanguageDetector {
     // constructor
     constructor() {
         this.ai = new OpenAI({
-            model: OpenAIModels.GPT35TURBO,
+            model: OpenAIModels.GPT4,
             maxTokens: 100,
             temperature: 0,
             memoryCacheKey: String(new Date().getTime()),
@@ -31,6 +31,6 @@ class OpenAILanguageDetector {
 }
 function openAILanguegeDetectorTest() {
     const detector = new OpenAILanguageDetector();
-    const lang = detector.detect('吾輩は猫である');
+    const lang = detector.detect('私は法人です');
     console.log(lang);
 }

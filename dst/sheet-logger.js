@@ -1,15 +1,15 @@
 "use strict";
 class SheetLogger {
-    constructor(sheetName = 'logs', maxNum = 100) {
-        const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-        if (!sheet) {
-            throw new Error('logsシートが存在しません。');
+    constructor(args) {
+        if (!args.sheet) {
+            throw new Error('sheetがありません。');
         }
-        this.sheet = sheet;
+        this.sheet = args.sheet;
         // ログの最大数を超えていたら古いログを削除する
-        const rows = sheet.getLastRow();
+        const rows = this.sheet.getLastRow();
+        const maxNum = args.maxNum || 100;
         if (rows > maxNum) {
-            sheet.deleteRows(1, rows - maxNum);
+            this.sheet.deleteRows(1, rows - maxNum);
         }
     }
     log(text) {
@@ -20,4 +20,22 @@ class SheetLogger {
         ];
         this.sheet.appendRow(row);
     }
+    // Logger.log時に呼ばれるようにする
+    hookLogger() {
+        const self = this;
+        const originalLog = Logger.log;
+        Logger.log = function (text) {
+            //originallob bind
+            originalLog.bind(Logger)(text);
+            self.log(text);
+        };
+    }
+}
+function sheetLoggerTest() {
+    const aaa = new SheetLogger({
+        sheet: SpreadsheetApp.getActive().getSheetByName('logs'),
+        maxNum: 10,
+    });
+    aaa.hookLogger();
+    Logger.log(new Date());
 }

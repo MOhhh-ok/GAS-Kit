@@ -22,9 +22,9 @@ class OpenAI {
             model: this.model,
             max_tokens: this.maxTokens,
             temperature: this.temperature,
-            messages,
+            messages: newMessages,
         };
-        console.info(JSON.stringify(payload, null, 2));
+        Logger.log(JSON.stringify(payload, null, 2));
         const options = {
             contentType: "application/json",
             headers: { Authorization: "Bearer " + this.apiKey },
@@ -33,7 +33,7 @@ class OpenAI {
         // response
         const txt = UrlFetchApp.fetch(url, options).getContentText();
         const result = JSON.parse(txt);
-        console.info(JSON.stringify(result, null, 2));
+        Logger.log(JSON.stringify(result, null, 2));
         // add memory
         messages.forEach(m => this.memory.add(m));
         this.memory.add(result.choices[0].message);

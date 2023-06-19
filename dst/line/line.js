@@ -9,10 +9,7 @@ class LINE {
         const prop = PropertiesService.getScriptProperties();
         const payload = {
             replyToken: args.replyToken,
-            messages: [{
-                    type: 'text',
-                    text: args.text,
-                }]
+            messages: args.messages,
         };
         const options = {
             payload: JSON.stringify(payload),

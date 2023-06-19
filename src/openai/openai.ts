@@ -6,6 +6,8 @@ class OpenAI {
     temperature: number; // 0.0 ~ 1.0
     memory: OpenAIMemory;
     stickeyMessage?: OpenAIMessage;
+    limitter: OpenAILimitter;
+    limitterMessage: string;
 
     // constructor
     constructor(params: {
@@ -16,6 +18,8 @@ class OpenAI {
         memoryMax?: number,
         memoryCacheKey?: string,
         stickyMessage?: OpenAIMessage,
+        limitter?: OpenAILimitter,
+        limitterMessage?: string,
     }) {
         this.apiKey = params.apiKey || PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY') || '';
         this.model = params.model;
@@ -23,11 +27,18 @@ class OpenAI {
         this.temperature = params.temperature;
         this.memory = new OpenAIMemory(params.memoryMax || 0, 60 * 10, params.memoryCacheKey);
         this.stickeyMessage = params.stickyMessage;
+        this.limitter = params.limitter || OpenAILimitter.NoLimitter;
+        this.limitterMessage = params.limitterMessage || 'Limit reached. Please wait a while and try again.';
     }
 
     // chat
     chat35(messages: OpenAI35Message[]): OpenAI35Response {
         const url = "https://api.openai.com/v1/chat/completions";
+
+        // limit check
+        if (this.limitter.isLimit()) {
+            throw new Error(this.limitterMessage);
+        }
 
         // generate message
         const newMessages = [...this.memory.get(), ...messages];
@@ -59,6 +70,9 @@ class OpenAI {
         messages.forEach(m => this.memory.add(m));
         this.memory.add(result.choices[0].message);
 
+        // add limitter
+        this.limitter.addToken(result.usage.total_tokens);
+
         return result;
     }
 }
@@ -69,9 +83,17 @@ function OpenAITest() {
         model: OpenAIModels.GPT35TURBO,
         maxTokens: 2000,
         temperature: 0.7,
+        limitter: new OpenAILimitter({
+            cacheKey: 'openai-limitter-test',
+            limitTokens: 100,
+            limitSeconds: 60,
+
+        }),
     });
     const messages: OpenAI35Message[] = [
         { role: OpenAI35Role.SYSTEM, content: "You are a friend of user" },
         { role: OpenAI35Role.USER, content: "hello" },
     ];
+    const result = test.chat35(messages);
+    console.log(result);
 }

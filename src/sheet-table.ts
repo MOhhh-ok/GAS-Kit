@@ -73,12 +73,12 @@ class SheetTable {
     }
 
     // データを追加する
-    addObjects(objects: SheetTableObject[], options: {
+    addObjects(objects: SheetTableObject[], options?: {
         colStart?: number, // 開始列番号
         colEnd?: number, // 終了列番号
     }) {
-        const colStart = options.colStart || 1;
-        const colEnd = options.colEnd || this.header.length;
+        const colStart = options?.colStart || 1;
+        const colEnd = options?.colEnd || this.header.length;
 
         // 行配列の配列
         const newRows = objects.map(obj => {

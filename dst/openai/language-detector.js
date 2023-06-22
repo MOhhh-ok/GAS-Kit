@@ -4,9 +4,9 @@
  */
 class OpenAILanguageDetector {
     // constructor
-    constructor() {
+    constructor(model = OpenAIModels.GPT4) {
         this.ai = new OpenAI({
-            model: OpenAIModels.GPT4,
+            model,
             maxTokens: 100,
             temperature: 0,
             memoryCacheKey: String(new Date().getTime()),

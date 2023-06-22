@@ -73,14 +73,21 @@ class SheetTable {
     }
 
     // データを追加する
-    addObjects(objects: SheetTableObject[]) {
+    addObjects(objects: SheetTableObject[], options: {
+        colStart?: number, // 開始列番号
+        colEnd?: number, // 終了列番号
+    }) {
+        const colStart = options.colStart || 1;
+        const colEnd = options.colEnd || this.header.length;
 
+        // 行配列の配列
         const newRows = objects.map(obj => {
+            // 行配列
             const row = this.header.map(key => obj[key]);
-            return row;
+            return row.slice(colStart - 1, colEnd);
         });
 
-        const range = this.sheet.getRange(this.sheet.getLastRow() + 1, 1, newRows.length, newRows[0].length);
+        const range = this.sheet.getRange(this.sheet.getLastRow() + 1, colStart, newRows.length, colEnd - colStart + 1);
         range.setValues(newRows);
     }
 

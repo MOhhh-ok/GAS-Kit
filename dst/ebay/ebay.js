@@ -29,9 +29,9 @@ class Ebay {
             'SERVICE-VERSION': this.serviceVersion,
             'SECURITY-APPNAME': this.appId,
             'RESPONSE-DATA-FORMAT': 'JSON',
-            'REST-PAYLOAD': '',
+            'REST-PAYLOAD': 'true',
         }, ops);
-        const url = 'http://svcs.ebay.com/services/search/FindingService/v1?' + this.queryString(ops);
+        const url = 'https://svcs.ebay.com/services/search/FindingService/v1?' + this.queryString(ops);
         const ret = UrlFetchApp.fetch(url);
         const txt = ret.getContentText();
         return JSON.parse(txt);
@@ -47,7 +47,19 @@ class Ebay {
         return this.findingService(EbayOperations.FindItemsByKeywords, ops);
     }
 }
-function MyEbayTest() {
+function ebayTest() {
     const aaa = new Ebay();
-    console.log(aaa.findItemsBySeller('closer0924'));
+    const items = aaa.findingService(EbayOperations.FindItemsAdvanced, {
+        Seller: 'miyako_sunrise',
+        AvailableTo: 'US',
+        // keywords: 'tolkien',
+    });
+    console.log(JSON.stringify(items, null, 2));
+}
+function ebayTest2() {
+    const appId = PropertiesService.getScriptProperties().getProperty('EBAY_APP_ID');
+    const url = 'https://svcs.ebay.com/services/search/FindingService/v1?OPERATION-NAME=findItemsAdvanced&SERVICE-VERSION=1.0.0&SECURITY-APPNAME=' + appId + '&RESPONSE-DATA-FORMAT=JSON&REST-PAYLOAD=true&paginationInput.entriesPerPage=2&keywords=tolkien';
+    const res = UrlFetchApp.fetch(url);
+    const txt = res.getContentText();
+    console.log(txt);
 }

@@ -77,18 +77,22 @@ class FacebookReport {
         this.paging(url, options, onSuccess);
     }
 
-    // --function 5--
-    getAdsetList(onSuccess: Function): void {
+    /**
+     * Adsetsを取得
+     */
+    getAdsets(params: FbrAdsetsParameters, onSuccess: (a: FbrAdSet) => void): void {
         const options = this.makeOptions();
-        const url = this.endPoint + 'act_' + this.accountId + '/adsets?fields=id,campaign_id,daily_budget,status';
+        const url = this.makeGetUrl(this.endPoint + this.accountId + '/adsets', params);
 
         this.paging(url, options, onSuccess);
     }
 
-    // --function 8--
-    getAdList(onSuccess: Function): void {
+    /**
+     * Adを取得
+     */
+    getAds(params: FbrAdParameters, onSuccess: (a: FbrAd) => void): void {
         const options = this.makeOptions();
-        const url = this.endPoint + 'act_' + this.accountId + '/ads?fields=id,status';
+        const url = this.makeGetUrl(this.endPoint + this.accountId + '/ads', params);
 
         this.paging(url, options, onSuccess);
     }
@@ -98,7 +102,7 @@ class FacebookReport {
      * レポート作成をリクエスト
      * @result レポートID
      */
-    createInsights(payload: FbrCreateReportParameters): string {
+    private _createInsights(payload: FbrCreateReportParameters): string {
         const options = this.makeOptions({ method: 'post', payload });
         const res = UrlFetchApp.fetch(
             this.endPoint + "act_" + this.accountId + "/insights",
@@ -117,7 +121,7 @@ class FacebookReport {
     /**
      * レポート生成が完了したかどうかを取得
      */
-    isCreateInsightsCompleted(report_run_id: string): boolean {
+    private _isCreateInsightsCompleted(report_run_id: string): boolean {
         const options = this.makeOptions();
         const url = this.endPoint + report_run_id;
         const response = UrlFetchApp.fetch(url, options);
@@ -131,11 +135,11 @@ class FacebookReport {
      * レポートを取得
      */
     getInsights(payload: FbrCreateReportParameters, onSuccess: (a: FbrInsightsNode) => void): void {
-        const report_run_id = this.createInsights(payload);
+        const report_run_id = this._createInsights(payload);
 
         // 広告APIの取得結果は非同期なため進行状況を定期的に確認する
         // レポートジョブ未完了の場合は、10秒スリープし、再度進行状況を確認する
-        while (!this.isCreateInsightsCompleted(report_run_id)) {
+        while (!this._isCreateInsightsCompleted(report_run_id)) {
             Utilities.sleep(10 * 1000);
         }
 

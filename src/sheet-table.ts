@@ -75,19 +75,21 @@ class SheetTable {
     // データを追加する
     addObjects(objects: SheetTableObject[], options?: {
         colStart?: number, // 開始列番号
-        colEnd?: number, // 終了列番号
+        colCount?: number, // 何列処理するか
     }) {
+        if (objects.length === 0) return;
+        
         const colStart = options?.colStart || 1;
-        const colEnd = options?.colEnd || this.header.length;
+        const colCount = options?.colCount || this.header.length - colStart + 1;
 
         // 行配列の配列
         const newRows = objects.map(obj => {
             // 行配列
             const row = this.header.map(key => obj[key]);
-            return row.slice(colStart - 1, colEnd);
+            return row.slice(colStart - 1, colCount);
         });
 
-        const range = this.sheet.getRange(this.sheet.getLastRow() + 1, colStart, newRows.length, colEnd - colStart + 1);
+        const range = this.sheet.getRange(this.sheet.getLastRow() + 1, colStart, newRows.length, colCount);
         range.setValues(newRows);
     }
 
@@ -119,4 +121,5 @@ class SheetTable {
             ascending: ops.ascending,
         });
     }
+
 }

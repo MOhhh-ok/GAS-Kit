@@ -13,14 +13,19 @@ class SheetTable {
     // コンストラクタ
     constructor(args: {
         sheet: GoogleAppsScript.Spreadsheet.Sheet | null,
-        headRowNum: number
+        headRowNum: number,
     }) {
         if (!args.sheet) {
             throw new Error(`シートが見つかりませんでした。`);
         }
         this.sheet = args.sheet;
         this.headRowNum = args.headRowNum;
-        this.header = this.sheet.getRange(this.headRowNum, 1, 1, this.sheet.getLastColumn()).getValues()[0];
+
+        const lastCol = this.sheet.getLastColumn();
+
+        this.header = lastCol
+            ? this.sheet.getRange(this.headRowNum, 1, 1, this.sheet.getLastColumn()).getValues()[0]
+            : [];
     }
 
     // キーから列番号を取得する
@@ -35,6 +40,11 @@ class SheetTable {
     // データの範囲を取得する
     getBodyRange(): GoogleAppsScript.Spreadsheet.Range {
         return this.sheet.getRange(this.headRowNum + 1, 1, this.sheet.getLastRow() - this.headRowNum, this.sheet.getLastColumn());
+    }
+
+    // ボディーを削除する
+    clearBodyContents() {
+        this.getBodyRange().clear({ contentsOnly: true });
     }
 
     // データを取得する
@@ -78,7 +88,7 @@ class SheetTable {
         colCount?: number, // 何列処理するか
     }) {
         if (objects.length === 0) return;
-        
+
         const colStart = options?.colStart || 1;
         const colCount = options?.colCount || this.header.length - colStart + 1;
 
@@ -101,6 +111,20 @@ class SheetTable {
         range.setValues(values);
     }
 
+    private _ObjectsToHeader(objects: SheetTableObject[]): string[] {
+        const headerSet = new Set<string>();
+        objects.forEach(object => Object.keys(object).forEach(key => headerSet.add(key)));
+        return [...headerSet];
+    }
+
+    // ヘッダを含めて新規にテーブルを書き込む
+    writeNewTable(objects: SheetTableObject[]) {
+        this.sheet.getDataRange().clear({ contentsOnly: true });
+        this.header = this._ObjectsToHeader(objects);
+        this.sheet.getRange(this.headRowNum, 1, 1, this.header.length).setValues([this.header]);
+        this.addObjects(objects);
+    }
+
     // データを削除する
     deleteRows(rows: number[]) {
         const rows2 = [...rows]; // コピーする
@@ -121,5 +145,26 @@ class SheetTable {
             ascending: ops.ascending,
         });
     }
+}
 
+function sheetTableTest() {
+    const prop = PropertiesService.getScriptProperties();
+    const ss = SpreadsheetApp.openById(prop.getProperty('TEST_SHEET_ID') || '');
+    if (!ss) {
+        throw new Error('スプレッドシートが見つかりませんでした。');
+    }
+
+    const sheetName = 'sheetTableTest';
+    const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    const headRowNum = 1;
+
+    const table = new SheetTable({ sheet, headRowNum });
+
+    const data = [
+        { name: 'a', value: 1 },
+        { name: 'b', value: 2 },
+        { name: 'c', value: 3 },
+    ];
+
+    table.writeNewTable(data);
 }

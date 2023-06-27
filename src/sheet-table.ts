@@ -62,7 +62,7 @@ class SheetTable {
     }
 
     // 逆置換リストを取得する
-    getInvertedReplacements(): { [key: string]: string } {
+    private getInvertedReplacements(): { [key: string]: string } {
         const inverted: { [key: string]: string } = {};
         for (const [key, value] of Object.entries(this.replacements)) {
             inverted[value] = key;
@@ -71,7 +71,7 @@ class SheetTable {
     }
 
     // キーを置換する
-    replaceKeys(objects: SheetTableObject[], replacements: { [key: string]: string })
+    private replaceKeys(objects: SheetTableObject[], replacements: { [key: string]: string })
         : SheetTableObject[] {
 
         const newObjects = [];
@@ -87,14 +87,21 @@ class SheetTable {
     }
 
     // キーをシート用に置換する
-    replaceKeysToSheet(objects: SheetTableObject[]): SheetTableObject[] {
+    private replaceKeysToSheet(objects: SheetTableObject[]): SheetTableObject[] {
         return this.replaceKeys(objects, this.replacements);
     }
 
     // シート用のキーを元に戻す
-    replaceKeysFromSheet(objects: SheetTableObject[]): SheetTableObject[] {
+    private replaceKeysFromSheet(objects: SheetTableObject[]): SheetTableObject[] {
         const inverted = this.getInvertedReplacements();
         return this.replaceKeys(objects, inverted);
+    }
+
+    // オブジェクトリストから重複無しキーリストを取得する
+    private getKeysFromObjects(objects: SheetTableObject[]): string[] {
+        const headerSet = new Set<string>();
+        objects.forEach(object => Object.keys(object).forEach(key => headerSet.add(key)));
+        return [...headerSet];
     }
 
     // キーから列番号を取得する
@@ -157,11 +164,25 @@ class SheetTable {
     addObjects(objects: SheetTableObject[], options?: {
         colStart?: number, // 開始列番号
         colCount?: number, // 何列処理するか
+        expand?: boolean, // テーブルを拡張するかどうか
     }) {
         if (objects.length === 0) return;
 
         // キーをシート用に置換する
         const newObjects = this.replaceKeysToSheet(objects);
+
+        // ヘッダーを拡張するかどうか
+        if (options?.expand) {
+
+            // ヘッダーを拡張する
+            const expandHeader = this.getKeysFromObjects(newObjects);
+            for (const h of expandHeader) {
+                if (!this.header.includes(h)) {
+                    // ヘッダーに追加
+                    this.header.push(h);
+                }
+            }
+        }
 
         // 列範囲。指定がなければすべての範囲を計算する
         const colStart = options?.colStart || 1;
@@ -174,6 +195,12 @@ class SheetTable {
             return row.slice(colStart - 1, colCount);
         });
 
+        // ヘッダ書き込み
+        this.sheet.getRange(this.headRowNum, colStart, 1, colCount).setValues(
+            [this.header.slice(colStart - 1, colCount)]
+        );
+
+        // データ書き込み
         const range = this.sheet.getRange(this.sheet.getLastRow() + 1, colStart, newRows.length, colCount);
         range.setValues(newRows);
     }
@@ -192,12 +219,6 @@ class SheetTable {
         range.setValues([newRow]);
     }
 
-    // オブジェクトリストから重複無しキーリストを取得する
-    private _getKeysFromObjects(objects: SheetTableObject[]): string[] {
-        const headerSet = new Set<string>();
-        objects.forEach(object => Object.keys(object).forEach(key => headerSet.add(key)));
-        return [...headerSet];
-    }
 
     // ヘッダを含めて新規にテーブルを書き込む
     writeNewTable(objects: SheetTableObject[]) {
@@ -207,7 +228,7 @@ class SheetTable {
         const newObjects = this.replaceKeysToSheet(objects);
 
         // ヘッダーを取得する
-        this.header = this._getKeysFromObjects(newObjects);
+        this.header = this.getKeysFromObjects(newObjects);
 
         if (this.header.length == 0) return;
         this.sheet.getRange(this.headRowNum, 1, 1, this.header.length).setValues([this.header]);

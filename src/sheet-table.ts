@@ -121,6 +121,7 @@ class SheetTable {
     writeNewTable(objects: SheetTableObject[]) {
         this.sheet.getDataRange().clear({ contentsOnly: true });
         this.header = this._ObjectsToHeader(objects);
+        if (this.header.length == 0) return;
         this.sheet.getRange(this.headRowNum, 1, 1, this.header.length).setValues([this.header]);
         this.addObjects(objects);
     }

@@ -239,32 +239,43 @@ class SheetTable {
 
 
     // IDを基準に全体データを更新する
-    updateObjects(objects: SheetTableObject[], idColName: string, ops?: {
+    updateObjects(newObjects: SheetTableObject[], idColName: string, ops?: {
         expand?: boolean, // テーブルを拡張するかどうか
     }) {
 
         LockService.getScriptLock().waitLock(10000);
 
+        // 新しいデータのマップ
+        const newIdMap = this.createMap(newObjects, idColName);
+
         // 前回のデータ
         const beforeObjects = this.getObjects();
-        const beforeMap = this.createMap(beforeObjects, idColName);
 
-        // 新しいデータ
-        const newObjects: SheetTableObject[] = [];
-        for (const obj of objects) {
-            const id = String(obj[idColName]);
+        // 結果データ
+        const resultObjects: SheetTableObject[] = [];
 
-            // 前回のデータに新しいデータをマージする
-            const newObj = Object.assign(
-                beforeMap.get(id) || {},
-                obj
-            );
-            newObjects.push(newObj);
+        // 前回のデータごとに処理
+        for (const befObj of beforeObjects) {
+
+            // 新しいデータを取得
+            const id = String(befObj[idColName]);
+            const newObj = newIdMap.get(id) || {};
+
+            // 新しいデータのマップから削除
+            newIdMap.delete(id);
+
+            // 結果に追加
+            resultObjects.push(Object.assign({}, befObj, newObj));
         }
 
-        // 削除してから追加する
+        // 新しいデータの残りを追加
+        for (const newObj of newIdMap.values()) {
+            resultObjects.push(newObj);
+        }
+
+        // テーブルデータを削除してから追加する
         this.clearBodyContents();
-        this.addObjects(newObjects, ops);
+        this.addObjects(resultObjects, ops);
 
         LockService.getScriptLock().releaseLock();
     }
@@ -292,6 +303,27 @@ class SheetTable {
         rows2.forEach(row => {
             this.sheet.deleteRow(row);
         });
+    }
+
+    // データを別シートにコピーする。シートコピーメソッドはシートのアクティベートが必要なため代替手段
+    copyToSheet(ops: {
+        dstSheet?: GoogleAppsScript.Spreadsheet.Sheet,
+        dstSheetName?: string,
+    }) {
+
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let dstSheet = ops.dstSheet;
+
+        if (!dstSheet) {
+            if (!ops.dstSheetName) throw new Error('シートが指定されていません。');
+            dstSheet = ss.getSheetByName(ops.dstSheetName) || ss.insertSheet(ops.dstSheetName);
+        }
+
+        dstSheet.getDataRange().clear();
+
+        const srcRange = this.sheet.getDataRange();
+        const dstRange = dstSheet.getRange(1, 1, srcRange.getNumRows(), srcRange.getNumColumns());
+        srcRange.copyTo(dstRange);
     }
 
     // データ範囲をソートする

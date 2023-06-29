@@ -12,7 +12,7 @@ class OpenAI {
         this.limitterMessage = params.limitterMessage || 'Limit reached. Please wait a while and try again.';
     }
     // chat
-    chat35(messages) {
+    chat35(messages, options = {}) {
         const url = "https://api.openai.com/v1/chat/completions";
         // limit check
         if (this.limitter.isLimit()) {
@@ -31,17 +31,22 @@ class OpenAI {
             messages: newMessages,
         };
         Logger.log(JSON.stringify(payload, null, 2));
-        const options = {
+        const fetchOptions = {
             contentType: "application/json",
             headers: { Authorization: "Bearer " + this.apiKey },
             payload: JSON.stringify(payload),
         };
         // response
-        const txt = UrlFetchApp.fetch(url, options).getContentText();
+        const txt = UrlFetchApp.fetch(url, fetchOptions).getContentText();
         const result = JSON.parse(txt);
         Logger.log(JSON.stringify(result, null, 2));
         // add memory
         messages.forEach(m => this.memory.add(m));
+        // trim
+        if (options.trim && result.choices[0].finish_reason == 'length') {
+            result.choices[0].message.content = result.choices[0].message.content.replace(/[^,.、。\s]+$/, '');
+        }
+        // memory
         this.memory.add(result.choices[0].message);
         // add limitter
         this.limitter.addToken(result.usage.total_tokens);

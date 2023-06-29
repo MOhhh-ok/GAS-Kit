@@ -3,23 +3,96 @@
  * シートをテーブルとして扱うクラス
  */
 class SheetTable {
-    // コンストラクタ
+    /**
+     * コンストラクタ
+     * @param args 以下のプロパティ
+     * - sheet?: GoogleAppsScript.Spreadsheet.Sheet | null
+     *     シートオブジェクト。無い場合はsheetNameから取得する
+     * - headRowNum?: number
+     *     ヘッダー行番号。デフォルトは1
+     * - sheetName?: string
+     *     シート名。無い場合はエラー
+     * - replacements?: {}
+     *     ヘッダー置換リスト。keyはデータキー、valueは置換後のシートヘッダー
+     */
     constructor(args) {
         if (!args.sheet) {
-            throw new Error(`シートが見つかりませんでした。`);
+            // シートオブジェクト無しの場合
+            if (!args.sheetName) {
+                // シート名が指定されていない場合はエラー
+                throw new Error(`シート名が指定されていません。`);
+            }
+            // シート名から取得
+            const ss = SpreadsheetApp.getActiveSpreadsheet();
+            this.sheet = ss.getSheetByName(args.sheetName) || ss.insertSheet(args.sheetName);
         }
-        this.sheet = args.sheet;
-        this.headRowNum = args.headRowNum;
+        else {
+            // シートオブジェクトがある場合
+            this.sheet = args.sheet;
+        }
+        // ヘッダー置換リスト
+        this.replacements = args.replacements || {};
+        // ヘッダー行番号。デフォルトは1
+        this.headRowNum = args.headRowNum || 1;
+        // ヘッダーを取得する
         const lastCol = this.sheet.getLastColumn();
         this.header = lastCol
-            ? this.sheet.getRange(this.headRowNum, 1, 1, this.sheet.getLastColumn()).getValues()[0]
+            ? this.sheet.getRange(this.headRowNum, 1, 1, lastCol).getValues()[0]
             : [];
+    }
+    // 逆置換リストを取得する
+    getInvertedReplacements() {
+        const inverted = {};
+        for (const [key, value] of Object.entries(this.replacements)) {
+            inverted[value] = key;
+        }
+        return inverted;
+    }
+    // キーを置換する
+    replaceKeys(objects, replacements) {
+        const newObjects = [];
+        for (const obj of objects) {
+            const newO = {};
+            for (const [key, value] of Object.entries(obj)) {
+                const newKey = replacements[key] || key;
+                newO[newKey] = value;
+            }
+            newObjects.push(newO);
+        }
+        return newObjects;
+    }
+    // キーをシート用に置換する
+    replaceKeysToSheet(objects) {
+        return this.replaceKeys(objects, this.replacements);
+    }
+    // シート用のキーを元に戻す
+    replaceKeysFromSheet(objects) {
+        const inverted = this.getInvertedReplacements();
+        return this.replaceKeys(objects, inverted);
+    }
+    // オブジェクトリストから重複無しキーリストを取得する
+    getKeysFromObjects(objects) {
+        const headerSet = new Set();
+        objects.forEach(object => Object.keys(object).forEach(key => headerSet.add(key)));
+        return [...headerSet];
+    }
+    // キーからマップを作成する。idはstringに変換する
+    createMap(objects, key) {
+        const map = new Map();
+        for (const obj of objects) {
+            const id = String(obj[key]);
+            if (id) {
+                map.set(id, obj);
+            }
+        }
+        return map;
     }
     // キーから列番号を取得する
     getColNum(key) {
-        const colIndex = this.header.indexOf(key);
+        const newKey = this.replacements[key] || key;
+        const colIndex = this.header.indexOf(newKey);
         if (colIndex < 0) {
-            throw new Error(`ヘッダーに${key}が見つかりませんでした。`);
+            throw new Error(`ヘッダーに${newKey}が見つかりませんでした。`);
         }
         return colIndex + 1;
     }
@@ -30,6 +103,10 @@ class SheetTable {
     // ボディーを削除する
     clearBodyContents() {
         this.getBodyRange().clear({ contentsOnly: true });
+    }
+    // すべてを削除する
+    clearAllContents() {
+        this.sheet.getDataRange().clear({ contentsOnly: true });
     }
     // データを取得する
     getObjects(ops) {
@@ -46,7 +123,7 @@ class SheetTable {
             const obj = {};
             if (ops && ops.includeRow) {
                 // 行番号を含める
-                obj['row'] = idx + this.headRowNum + 1;
+                obj[ops.rowColName || 'row'] = idx + this.headRowNum + 1;
             }
             // ヘッダーと合わせる
             this.header.forEach((key, i) => {
@@ -54,49 +131,112 @@ class SheetTable {
             });
             return obj;
         });
-        return objects;
+        // キーを元に戻して返す
+        return this.replaceKeysFromSheet(objects);
     }
     // データを追加する
     addObjects(objects, options) {
         if (objects.length === 0)
             return;
+        // キーをシート用に置換する
+        const newObjects = this.replaceKeysToSheet(objects);
+        // ヘッダーを拡張するかどうか
+        if (options === null || options === void 0 ? void 0 : options.expand) {
+            // ヘッダーを拡張する
+            const expandHeader = this.getKeysFromObjects(newObjects);
+            for (const h of expandHeader) {
+                if (!this.header.includes(h)) {
+                    // ヘッダーに追加
+                    this.header.push(h);
+                }
+            }
+        }
+        // 列範囲。指定がなければすべての範囲を計算する
         const colStart = (options === null || options === void 0 ? void 0 : options.colStart) || 1;
         const colCount = (options === null || options === void 0 ? void 0 : options.colCount) || this.header.length - colStart + 1;
-        // 行配列の配列
-        const newRows = objects.map(obj => {
-            // 行配列
+        // ２次元配列
+        const newRows = newObjects.map(obj => {
+            // １次元配列
             const row = this.header.map(key => obj[key]);
             return row.slice(colStart - 1, colCount);
         });
+        // ヘッダ書き込み
+        this.sheet.getRange(this.headRowNum, colStart, 1, colCount).setValues([this.header.slice(colStart - 1, colCount)]);
+        // データ書き込み
         const range = this.sheet.getRange(this.sheet.getLastRow() + 1, colStart, newRows.length, colCount);
         range.setValues(newRows);
     }
-    // データを更新する
+    // 行番号指定でデータを更新する
     updateObject(object, row) {
-        const colNums = this.header.map(key => this.getColNum(key));
-        const range = this.sheet.getRange(row, 1, 1, colNums.length);
-        const values = [colNums.map(colNum => object[this.header[colNum - 1]])];
-        range.setValues(values);
+        // キーをシート用に置換する
+        const newObject = this.replaceKeysToSheet([object])[0];
+        // ヘッダーと合わせて１次元配列にする
+        const newRow = this.header.map(key => newObject[key] || '');
+        // 更新する
+        const range = this.sheet.getRange(row, 1, 1, newRow.length);
+        range.setValues([newRow]);
     }
-    _ObjectsToHeader(objects) {
-        const headerSet = new Set();
-        objects.forEach(object => Object.keys(object).forEach(key => headerSet.add(key)));
-        return [...headerSet];
+    // IDを基準に全体データを更新する
+    updateObjects(newObjects, idColName, ops) {
+        LockService.getScriptLock().waitLock(10000);
+        // 新しいデータのマップ
+        const newIdMap = this.createMap(newObjects, idColName);
+        // 前回のデータ
+        const beforeObjects = this.getObjects();
+        // 結果データ
+        const resultObjects = [];
+        // 前回のデータごとに処理
+        for (const befObj of beforeObjects) {
+            // 新しいデータを取得
+            const id = String(befObj[idColName]);
+            const newObj = newIdMap.get(id) || {};
+            // 新しいデータのマップから削除
+            newIdMap.delete(id);
+            // 結果に追加
+            resultObjects.push(Object.assign({}, befObj, newObj));
+        }
+        // 新しいデータの残りを追加
+        for (const newObj of newIdMap.values()) {
+            resultObjects.push(newObj);
+        }
+        // テーブルデータを削除してから追加する
+        this.clearBodyContents();
+        this.addObjects(resultObjects, ops);
+        LockService.getScriptLock().releaseLock();
     }
     // ヘッダを含めて新規にテーブルを書き込む
     writeNewTable(objects) {
-        this.sheet.getDataRange().clear({ contentsOnly: true });
-        this.header = this._ObjectsToHeader(objects);
+        this.clearAllContents();
+        // キーをシート用に置換する
+        const newObjects = this.replaceKeysToSheet(objects);
+        // ヘッダーを取得する
+        this.header = this.getKeysFromObjects(newObjects);
+        if (this.header.length == 0)
+            return;
         this.sheet.getRange(this.headRowNum, 1, 1, this.header.length).setValues([this.header]);
-        this.addObjects(objects);
+        this.addObjects(newObjects);
     }
-    // データを削除する
+    // 行番号でデータを削除する
     deleteRows(rows) {
         const rows2 = [...rows]; // コピーする
         rows2.sort((a, b) => b - a); // 降順にソートする
         rows2.forEach(row => {
             this.sheet.deleteRow(row);
         });
+    }
+    // データを別シートにコピーする。シートコピーメソッドはシートのアクティベートが必要なため代替手段
+    copyToSheet(ops) {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        let dstSheet = ops.dstSheet;
+        if (!dstSheet) {
+            if (!ops.dstSheetName)
+                throw new Error('シートが指定されていません。');
+            dstSheet = ss.getSheetByName(ops.dstSheetName) || ss.insertSheet(ops.dstSheetName);
+        }
+        dstSheet.getDataRange().clear();
+        const srcRange = this.sheet.getDataRange();
+        const dstRange = dstSheet.getRange(1, 1, srcRange.getNumRows(), srcRange.getNumColumns());
+        srcRange.copyTo(dstRange);
     }
     // データ範囲をソートする
     sort(ops) {

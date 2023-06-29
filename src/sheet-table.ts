@@ -116,7 +116,46 @@ class SheetTable {
         return map;
     }
 
-    // キーから列番号を取得する
+    /**
+     * 指定項目でマップを生成
+     */
+    static createMap(keyName: keyof SheetTableObject, objects: SheetTableObject[]): Map<string, SheetTableObject> {
+        const map = new Map();
+        for (const obj of objects) {
+            const id = obj[keyName];
+            if (!id) continue;
+            map.set(String(id), obj);
+        }
+        return map;
+    }
+
+    /**
+     * オブジェクトリストを指定キーで結合する。外部結合
+     */
+    static joinObjects(key: keyof SheetTableObject, ...objectsList: SheetTableObject[][]) {
+        let result: SheetTableObject[] = objectsList.shift() || [];
+
+        let objects;
+        while (objects = objectsList.shift()) {
+            const map = SheetTable.createMap(key, objects);
+            for (const obj of result) {
+                const id = obj[key];
+                if (!id) continue;
+                const obj2 = map.get(String(id)) || {};
+                map.delete(String(id));
+                Object.assign(obj, obj2);
+            }
+            for (const obj of map.values()) {
+                result.push(obj);
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * キーから列番号を取得する
+     */
     getColNum(key: string): number {
         const newKey = this.replacements[key] || key;
         const colIndex = this.header.indexOf(newKey);
@@ -126,22 +165,30 @@ class SheetTable {
         return colIndex + 1;
     }
 
-    // データの範囲を取得する
+    /**
+     * データの範囲を取得する
+     */
     getBodyRange(): GoogleAppsScript.Spreadsheet.Range {
         return this.sheet.getRange(this.headRowNum + 1, 1, this.sheet.getLastRow() - this.headRowNum, this.sheet.getLastColumn());
     }
 
-    // ボディーを削除する
+    /**
+     * ボディーを削除する
+     */
     clearBodyContents() {
         this.getBodyRange().clear({ contentsOnly: true });
     }
 
-    // すべてを削除する
+    /**
+     * すべてを削除する
+     */
     clearAllContents() {
         this.sheet.getDataRange().clear({ contentsOnly: true });
     }
 
-    // データを取得する
+    /**
+     * データを取得する
+     */
     getObjects(ops?: {
         displayValue?: boolean, // 表示値を取得するかどうか
         includeRow?: boolean, // 行番号を含めるかどうか
@@ -178,7 +225,10 @@ class SheetTable {
         return this.replaceKeysFromSheet(objects);
     }
 
-    // データを追加する
+
+    /**
+     * データを追加する
+     */
     addObjects(objects: SheetTableObject[], options?: {
         colStart?: number, // 開始列番号。省略時は1
         colCount?: number, // 何列処理するか。省略時は最後列まで
@@ -238,50 +288,29 @@ class SheetTable {
     }
 
 
-    // IDを基準に全体データを更新する
+    /**
+     * IDを基準に全体データを更新する
+     */
     updateObjects(newObjects: SheetTableObject[], idColName: string, ops?: {
         expand?: boolean, // テーブルを拡張するかどうか
     }) {
 
         LockService.getScriptLock().waitLock(10000);
 
-        // 新しいデータのマップ
-        const newIdMap = this.createMap(newObjects, idColName);
-
-        // 前回のデータ
-        const beforeObjects = this.getObjects();
-
-        // 結果データ
-        const resultObjects: SheetTableObject[] = [];
-
-        // 前回のデータごとに処理
-        for (const befObj of beforeObjects) {
-
-            // 新しいデータを取得
-            const id = String(befObj[idColName]);
-            const newObj = newIdMap.get(id) || {};
-
-            // 新しいデータのマップから削除
-            newIdMap.delete(id);
-
-            // 結果に追加
-            resultObjects.push(Object.assign({}, befObj, newObj));
-        }
-
-        // 新しいデータの残りを追加
-        for (const newObj of newIdMap.values()) {
-            resultObjects.push(newObj);
-        }
+        // 既存データと新しいデータを結合
+        const joinedObjects = SheetTable.joinObjects(idColName, this.getObjects(), newObjects);
 
         // テーブルデータを削除してから追加する
         this.clearBodyContents();
-        this.addObjects(resultObjects, ops);
+        this.addObjects(joinedObjects, ops);
 
         LockService.getScriptLock().releaseLock();
     }
 
 
-    // ヘッダを含めて新規にテーブルを書き込む
+    /**
+     * ヘッダを含めて新規にテーブルを書き込む
+     */
     writeNewTable(objects: SheetTableObject[]) {
         this.clearAllContents();
 

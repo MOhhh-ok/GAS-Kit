@@ -104,6 +104,18 @@ class SheetTable {
         return [...headerSet];
     }
 
+    // キーからマップを作成する。idはstringに変換する
+    private createMap(objects: SheetTableObject[], key: string): Map<string, SheetTableObject> {
+        const map = new Map();
+        for (const obj of objects) {
+            const id = String(obj[key]);
+            if (id) {
+                map.set(id, obj);
+            }
+        }
+        return map;
+    }
+
     // キーから列番号を取得する
     getColNum(key: string): number {
         const newKey = this.replacements[key] || key;
@@ -124,10 +136,16 @@ class SheetTable {
         this.getBodyRange().clear({ contentsOnly: true });
     }
 
+    // すべてを削除する
+    clearAllContents() {
+        this.sheet.getDataRange().clear({ contentsOnly: true });
+    }
+
     // データを取得する
     getObjects(ops?: {
         displayValue?: boolean, // 表示値を取得するかどうか
         includeRow?: boolean, // 行番号を含めるかどうか
+        rowColName?: string, // 行番号のキー名。省略時はrow
     }): SheetTableObject[] {
 
         const range = this.getBodyRange();
@@ -145,7 +163,7 @@ class SheetTable {
 
             if (ops && ops.includeRow) {
                 // 行番号を含める
-                obj['row'] = idx + this.headRowNum + 1;
+                obj[ops.rowColName || 'row'] = idx + this.headRowNum + 1;
             }
 
             // ヘッダーと合わせる
@@ -162,8 +180,8 @@ class SheetTable {
 
     // データを追加する
     addObjects(objects: SheetTableObject[], options?: {
-        colStart?: number, // 開始列番号
-        colCount?: number, // 何列処理するか
+        colStart?: number, // 開始列番号。省略時は1
+        colCount?: number, // 何列処理するか。省略時は最後列まで
         expand?: boolean, // テーブルを拡張するかどうか
     }) {
         if (objects.length === 0) return;
@@ -220,9 +238,41 @@ class SheetTable {
     }
 
 
+    // IDを基準に全体データを更新する
+    updateObjects(objects: SheetTableObject[], idColName: string, ops?: {
+        expand?: boolean, // テーブルを拡張するかどうか
+    }) {
+
+        LockService.getScriptLock().waitLock(10000);
+
+        // 前回のデータ
+        const beforeObjects = this.getObjects();
+        const beforeMap = this.createMap(beforeObjects, idColName);
+
+        // 新しいデータ
+        const newObjects: SheetTableObject[] = [];
+        for (const obj of objects) {
+            const id = String(obj[idColName]);
+
+            // 前回のデータに新しいデータをマージする
+            const newObj = Object.assign(
+                beforeMap.get(id) || {},
+                obj
+            );
+            newObjects.push(newObj);
+        }
+
+        // 削除してから追加する
+        this.clearBodyContents();
+        this.addObjects(newObjects, ops);
+
+        LockService.getScriptLock().releaseLock();
+    }
+
+
     // ヘッダを含めて新規にテーブルを書き込む
     writeNewTable(objects: SheetTableObject[]) {
-        this.sheet.getDataRange().clear({ contentsOnly: true });
+        this.clearAllContents();
 
         // キーをシート用に置換する
         const newObjects = this.replaceKeysToSheet(objects);
@@ -256,6 +306,8 @@ class SheetTable {
         });
     }
 }
+
+
 
 function sheetTableTest() {
     const prop = PropertiesService.getScriptProperties();

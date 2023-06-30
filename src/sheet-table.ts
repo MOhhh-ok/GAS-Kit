@@ -104,18 +104,6 @@ class SheetTable {
         return [...headerSet];
     }
 
-    // キーからマップを作成する。idはstringに変換する
-    private createMap(objects: SheetTableObject[], key: string): Map<string, SheetTableObject> {
-        const map = new Map();
-        for (const obj of objects) {
-            const id = String(obj[key]);
-            if (id) {
-                map.set(id, obj);
-            }
-        }
-        return map;
-    }
-
     /**
      * 指定項目でマップを生成
      */
@@ -133,7 +121,9 @@ class SheetTable {
      * オブジェクトリストを指定キーで結合する。外部結合
      */
     static joinObjects(key: keyof SheetTableObject, ...objectsList: SheetTableObject[][]) {
+        objectsList = [...objectsList];
         let result: SheetTableObject[] = objectsList.shift() || [];
+        result = [...result];
 
         let objects;
         while (objects = objectsList.shift()) {
@@ -146,7 +136,7 @@ class SheetTable {
                 Object.assign(obj, obj2);
             }
             for (const obj of map.values()) {
-                result.push(obj);
+                result.push(Object.assign({}, obj));
             }
         }
         return result;
@@ -169,7 +159,7 @@ class SheetTable {
      * データの範囲を取得する
      */
     getBodyRange(): GoogleAppsScript.Spreadsheet.Range {
-        return this.sheet.getRange(this.headRowNum + 1, 1, this.sheet.getLastRow() - this.headRowNum, this.sheet.getLastColumn());
+        return this.sheet.getRange(this.headRowNum + 1, 1, (this.sheet.getLastRow() - this.headRowNum) || 1, this.sheet.getLastColumn() || 1);
     }
 
     /**
@@ -291,7 +281,7 @@ class SheetTable {
     /**
      * IDを基準に全体データを更新する
      */
-    updateObjects(newObjects: SheetTableObject[], idColName: string, ops?: {
+    updateObjects(idColName: string, newObjects: SheetTableObject[], ops?: {
         expand?: boolean, // テーブルを拡張するかどうか
     }) {
 
@@ -369,6 +359,14 @@ class SheetTable {
 }
 
 
+function sheetTableTest2() {
+    const a = [{ k: 10, a: 1 }, { k: 20, a: 3, b: 4 }];
+    const b = [{ k: 20, a: 5, b: 6 }, { a: 3, b: 4 }];
+    const c = [{ k: 30, a: 8, b: 9 }, { a: 3, b: 4 }];
+
+    const result = SheetTable.joinObjects('k', a, b, c);
+    Logger.log(result);
+}
 
 function sheetTableTest() {
     const prop = PropertiesService.getScriptProperties();
@@ -391,3 +389,4 @@ function sheetTableTest() {
 
     table.writeNewTable(data);
 }
+

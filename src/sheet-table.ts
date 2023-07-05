@@ -158,15 +158,18 @@ class SheetTable {
     /**
      * データの範囲を取得する
      */
-    getBodyRange(): GoogleAppsScript.Spreadsheet.Range {
-        return this.sheet.getRange(this.headRowNum + 1, 1, (this.sheet.getLastRow() - this.headRowNum) || 1, this.sheet.getLastColumn() || 1);
+    getBodyRange(): GoogleAppsScript.Spreadsheet.Range | null {
+        const numRows = this.sheet.getLastRow() - this.headRowNum;
+        const numCols = this.sheet.getLastColumn();
+        if (numRows <= 0 || numCols == 0) return null;
+        return this.sheet.getRange(this.headRowNum + 1, 1, numRows, numCols);
     }
 
     /**
      * ボディーを削除する
      */
     clearBodyContents() {
-        this.getBodyRange().clear({ contentsOnly: true });
+        this.getBodyRange()?.clear({ contentsOnly: true });
     }
 
     /**
@@ -186,6 +189,8 @@ class SheetTable {
     }): SheetTableObject[] {
 
         const range = this.getBodyRange();
+        if (!range) return [];
+
         let rows: any[][];
 
         if (ops && ops.displayValue) {
@@ -240,6 +245,11 @@ class SheetTable {
                     this.header.push(h);
                 }
             }
+        }
+
+        // ヘッダーがなければエラー
+        if (this.header.length == 0) {
+            throw new Error('ヘッダーがありません。' + this.sheet.getName());
         }
 
         // 列範囲。指定がなければすべての範囲を計算する
@@ -351,7 +361,10 @@ class SheetTable {
         ascending?: boolean // 昇順かどうか
     }) {
         const colNum = this.getColNum(ops.key);
-        this.getBodyRange().sort({
+        const range = this.getBodyRange();
+        if (!range) return;
+
+        range.sort({
             column: colNum,
             ascending: ops.ascending,
         });

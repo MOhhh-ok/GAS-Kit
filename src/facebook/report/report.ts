@@ -159,7 +159,7 @@ class FacebookReport {
     /**
      * バッチで取得
      */
-    getBatch(nodes: string[], edge: string, fields: string[], params: {}): Record<string, any>[] {
+    private _getBatch(nodes: string[], edge: string, fields: string[], params: {}): Record<string, any>[] {
         // バッチ生成
         const batch = nodes.map(node => {
             const url = this.makeGetUrl('v17.0/' + node + edge, fields, params);
@@ -177,9 +177,15 @@ class FacebookReport {
         // リクエスト
         const url = 'https://graph.facebook.com';
         const res = UrlFetchApp.fetch(url, options);
-        const data = JSON.parse(res.getContentText());
 
-        return data.map((d: any) => {
+        // Logger.log(JSON.stringify(res.getAllHeaders(), null, 2));
+
+        const resTxt = res.getContentText();
+        Logger.log(resTxt);
+        const data = JSON.parse(resTxt);
+        const list = data;//data.data || data;
+
+        return list.map((d: any) => {
             if (d.code != 200) {
                 Logger.log(JSON.stringify(d, null, 2));
                 return {};
@@ -187,6 +193,23 @@ class FacebookReport {
             const body = JSON.parse(d.body);
             Logger.log(JSON.stringify(body, null, 2));
             return body || {};
-        });
+        }).flat();
+    }
+
+    /**
+     * バッチで取得
+     */
+    getBatch(nodes: string[], edge: string, fields: string[], params: {},
+        onSuccess?: (objs: Record<string, any>) => void): Record<string, any>[] {
+
+        const copiedNodes = [...nodes];
+        const result = [];
+        while (copiedNodes.length > 0) {
+            const chunk = copiedNodes.splice(0, 50);
+            const data = this._getBatch(chunk, edge, fields, params);
+            result.push(...data);
+            if (onSuccess) onSuccess(data);
+        }
+        return result;
     }
 }

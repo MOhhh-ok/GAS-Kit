@@ -76,18 +76,46 @@ class SheetTable {
         objects.forEach(object => Object.keys(object).forEach(key => headerSet.add(key)));
         return [...headerSet];
     }
-    // キーからマップを作成する。idはstringに変換する
-    createMap(objects, key) {
+    /**
+     * 指定項目でマップを生成
+     */
+    static createMap(keyName, objects) {
         const map = new Map();
         for (const obj of objects) {
-            const id = String(obj[key]);
-            if (id) {
-                map.set(id, obj);
-            }
+            const id = obj[keyName];
+            if (!id)
+                continue;
+            map.set(String(id), obj);
         }
         return map;
     }
-    // キーから列番号を取得する
+    /**
+     * オブジェクトリストを指定キーで結合する。外部結合
+     */
+    static joinObjects(key, ...objectsList) {
+        objectsList = [...objectsList];
+        let result = objectsList.shift() || [];
+        result = [...result];
+        let objects;
+        while (objects = objectsList.shift()) {
+            const map = SheetTable.createMap(key, objects);
+            for (const obj of result) {
+                const id = obj[key];
+                if (!id)
+                    continue;
+                const obj2 = map.get(String(id)) || {};
+                map.delete(String(id));
+                Object.assign(obj, obj2);
+            }
+            for (const obj of map.values()) {
+                result.push(Object.assign({}, obj));
+            }
+        }
+        return result;
+    }
+    /**
+     * キーから列番号を取得する
+     */
     getColNum(key) {
         const newKey = this.replacements[key] || key;
         const colIndex = this.header.indexOf(newKey);
@@ -96,21 +124,36 @@ class SheetTable {
         }
         return colIndex + 1;
     }
-    // データの範囲を取得する
+    /**
+     * データの範囲を取得する
+     */
     getBodyRange() {
-        return this.sheet.getRange(this.headRowNum + 1, 1, this.sheet.getLastRow() - this.headRowNum, this.sheet.getLastColumn());
+        const numRows = this.sheet.getLastRow() - this.headRowNum;
+        const numCols = this.sheet.getLastColumn();
+        if (numRows <= 0 || numCols == 0)
+            return null;
+        return this.sheet.getRange(this.headRowNum + 1, 1, numRows, numCols);
     }
-    // ボディーを削除する
+    /**
+     * ボディーを削除する
+     */
     clearBodyContents() {
-        this.getBodyRange().clear({ contentsOnly: true });
+        var _a;
+        (_a = this.getBodyRange()) === null || _a === void 0 ? void 0 : _a.clear({ contentsOnly: true });
     }
-    // すべてを削除する
+    /**
+     * すべてを削除する
+     */
     clearAllContents() {
         this.sheet.getDataRange().clear({ contentsOnly: true });
     }
-    // データを取得する
+    /**
+     * データを取得する
+     */
     getObjects(ops) {
         const range = this.getBodyRange();
+        if (!range)
+            return [];
         let rows;
         if (ops && ops.displayValue) {
             rows = range.getDisplayValues();
@@ -134,7 +177,9 @@ class SheetTable {
         // キーを元に戻して返す
         return this.replaceKeysFromSheet(objects);
     }
-    // データを追加する
+    /**
+     * データを追加する
+     */
     addObjects(objects, options) {
         if (objects.length === 0)
             return;
@@ -150,6 +195,10 @@ class SheetTable {
                     this.header.push(h);
                 }
             }
+        }
+        // ヘッダーがなければエラー
+        if (this.header.length == 0) {
+            throw new Error('ヘッダーがありません。' + this.sheet.getName());
         }
         // 列範囲。指定がなければすべての範囲を計算する
         const colStart = (options === null || options === void 0 ? void 0 : options.colStart) || 1;
@@ -176,35 +225,21 @@ class SheetTable {
         const range = this.sheet.getRange(row, 1, 1, newRow.length);
         range.setValues([newRow]);
     }
-    // IDを基準に全体データを更新する
-    updateObjects(newObjects, idColName, ops) {
+    /**
+     * IDを基準に全体データを更新する
+     */
+    updateObjects(idColName, newObjects, ops) {
         LockService.getScriptLock().waitLock(10000);
-        // 新しいデータのマップ
-        const newIdMap = this.createMap(newObjects, idColName);
-        // 前回のデータ
-        const beforeObjects = this.getObjects();
-        // 結果データ
-        const resultObjects = [];
-        // 前回のデータごとに処理
-        for (const befObj of beforeObjects) {
-            // 新しいデータを取得
-            const id = String(befObj[idColName]);
-            const newObj = newIdMap.get(id) || {};
-            // 新しいデータのマップから削除
-            newIdMap.delete(id);
-            // 結果に追加
-            resultObjects.push(Object.assign({}, befObj, newObj));
-        }
-        // 新しいデータの残りを追加
-        for (const newObj of newIdMap.values()) {
-            resultObjects.push(newObj);
-        }
+        // 既存データと新しいデータを結合
+        const joinedObjects = SheetTable.joinObjects(idColName, this.getObjects(), newObjects);
         // テーブルデータを削除してから追加する
         this.clearBodyContents();
-        this.addObjects(resultObjects, ops);
+        this.addObjects(joinedObjects, ops);
         LockService.getScriptLock().releaseLock();
     }
-    // ヘッダを含めて新規にテーブルを書き込む
+    /**
+     * ヘッダを含めて新規にテーブルを書き込む
+     */
     writeNewTable(objects) {
         this.clearAllContents();
         // キーをシート用に置換する
@@ -241,11 +276,21 @@ class SheetTable {
     // データ範囲をソートする
     sort(ops) {
         const colNum = this.getColNum(ops.key);
-        this.getBodyRange().sort({
+        const range = this.getBodyRange();
+        if (!range)
+            return;
+        range.sort({
             column: colNum,
             ascending: ops.ascending,
         });
     }
+}
+function sheetTableTest2() {
+    const a = [{ k: 10, a: 1 }, { k: 20, a: 3, b: 4 }];
+    const b = [{ k: 20, a: 5, b: 6 }, { a: 3, b: 4 }];
+    const c = [{ k: 30, a: 8, b: 9 }, { a: 3, b: 4 }];
+    const result = SheetTable.joinObjects('k', a, b, c);
+    Logger.log(result);
 }
 function sheetTableTest() {
     const prop = PropertiesService.getScriptProperties();

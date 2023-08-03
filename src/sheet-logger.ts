@@ -26,7 +26,12 @@ class SheetLogger {
 
     log(text: string) {
         if (this.singleLineRange) {
-            const value = this.singleLineRange.getValue() + text;
+            let value = this.singleLineRange.getValue();
+            if (value) {
+                value += this.singleLineSeparator;
+            }
+            value += text;
+
             this.singleLineRange.setValue(value);
         } else {
             this.sheet.appendRow([new Date(), text]);
@@ -64,7 +69,6 @@ function sheetLoggerTest() {
     const aaa = new SheetLogger({
         sheet: ss.getSheetByName('logs') || ss.insertSheet('logs'),
         maxNum: 10,
-        singleLine: false,
     });
 
     aaa.hookLogger();

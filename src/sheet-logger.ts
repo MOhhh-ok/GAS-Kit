@@ -6,18 +6,12 @@ class SheetLogger {
     constructor(args: {
         sheet: GoogleAppsScript.Spreadsheet.Sheet | null,
         maxNum?: number,
-        singleLine?: boolean,
         singleLineSeparator?: string,
     }) {
         if (!args.sheet) {
             throw new Error('sheetがありません。');
         }
         this.sheet = args.sheet;
-
-        // シングルラインモード
-        if (args.singleLine) {
-            this.addLine();
-        }
 
         // シングルラインのセパレータ
         this.singleLineSeparator = args.singleLineSeparator || '';
@@ -39,7 +33,7 @@ class SheetLogger {
         }
     }
 
-    addLine(text?: string) {
+    addSingleLine(text?: string) {
         this.sheet.appendRow([new Date()]);
         const lastRowNum = this.sheet.getLastRow();
         const target = this.sheet.getRange(lastRowNum, 2);

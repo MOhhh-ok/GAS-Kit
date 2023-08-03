@@ -7,10 +7,6 @@ class SheetLogger {
             throw new Error('sheetがありません。');
         }
         this.sheet = args.sheet;
-        // シングルラインモード
-        if (args.singleLine) {
-            this.addLine();
-        }
         // シングルラインのセパレータ
         this.singleLineSeparator = args.singleLineSeparator || '';
         // ログの最大数を超えていたら古いログを削除する
@@ -21,20 +17,15 @@ class SheetLogger {
         }
     }
     log(text) {
-        const date = new Date();
-        const row = [
-            date,
-            text,
-        ];
         if (this.singleLineRange) {
             const value = this.singleLineRange.getValue() + text;
             this.singleLineRange.setValue(value);
         }
         else {
-            this.sheet.appendRow(row);
+            this.sheet.appendRow([new Date(), text]);
         }
     }
-    addLine(text) {
+    addSingleLine(text) {
         this.sheet.appendRow([new Date()]);
         const lastRowNum = this.sheet.getLastRow();
         const target = this.sheet.getRange(lastRowNum, 2);

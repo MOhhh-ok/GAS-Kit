@@ -6,7 +6,7 @@ class ChatWork {
     }
     send(roomId, msg) {
         const url = `https://api.chatwork.com/v2/rooms/${roomId}/messages`;
-        const res = UrlFetchApp.fetch(url, {
+        const options = {
             method: 'post',
             headers: {
                 'X-ChatWorkToken': this.token,
@@ -14,9 +14,11 @@ class ChatWork {
             payload: {
                 body: msg,
             },
-        });
+        };
+        Logger.log(JSON.stringify(options.payload, null, 2));
+        const res = UrlFetchApp.fetch(url, options);
         const txt = res.getContentText();
-        console.log(txt);
+        Logger.log(txt);
         return txt;
     }
 }

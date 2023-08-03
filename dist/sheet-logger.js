@@ -1,10 +1,16 @@
 "use strict";
 class SheetLogger {
     constructor(args) {
+        this.singleLineRange = null;
         if (!args.sheet) {
             throw new Error('sheetがありません。');
         }
         this.sheet = args.sheet;
+        this.singleLine = args.singleLine || false;
+        if (this.singleLine) {
+            this.sheet.appendRow([new Date()]);
+            this.singleLineRange = this.sheet.getRange(1, 2);
+        }
         // ログの最大数を超えていたら古いログを削除する
         const rows = this.sheet.getLastRow();
         const maxNum = args.maxNum || 100;
@@ -18,6 +24,11 @@ class SheetLogger {
             date,
             text,
         ];
+        if (this.singleLineRange) {
+            const value = this.singleLineRange.getValue() + ' ' + text;
+            this.singleLineRange.setValue(value);
+            return;
+        }
         this.sheet.appendRow(row);
     }
     // Logger.log時に呼ばれるようにする
@@ -32,10 +43,16 @@ class SheetLogger {
     }
 }
 function sheetLoggerTest() {
+    const id = PropertiesService.getScriptProperties().getProperty('TEST_SHEET_ID');
+    if (!id)
+        throw new Error('TEST_SHEET_IDがありません。');
+    const ss = SpreadsheetApp.openById(id);
     const aaa = new SheetLogger({
-        sheet: SpreadsheetApp.getActive().getSheetByName('logs'),
+        sheet: ss.getSheetByName('logs') || ss.insertSheet('logs'),
         maxNum: 10,
+        singleLine: false,
     });
     aaa.hookLogger();
-    Logger.log(new Date());
+    Logger.log('aiueo');
+    Logger.log('kaikukeko');
 }

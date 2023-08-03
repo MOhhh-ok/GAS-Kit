@@ -1,23 +1,26 @@
 class SheetLogger {
     sheet: GoogleAppsScript.Spreadsheet.Sheet;
-    singleLine: boolean;
     singleLineRange: GoogleAppsScript.Spreadsheet.Range | null = null;
+    singleLineSeparator: string = '';
 
     constructor(args: {
         sheet: GoogleAppsScript.Spreadsheet.Sheet | null,
         maxNum?: number,
         singleLine?: boolean,
+        singleLineSeparator?: string,
     }) {
         if (!args.sheet) {
             throw new Error('sheetがありません。');
         }
         this.sheet = args.sheet;
 
-        this.singleLine = args.singleLine || false;
-        if (this.singleLine) {
-            this.sheet.appendRow([new Date()]);
-            this.singleLineRange = this.sheet.getRange(1, 2);
+        // シングルラインモード
+        if (args.singleLine) {
+            this.addLine();
         }
+
+        // シングルラインのセパレータ
+        this.singleLineSeparator = args.singleLineSeparator || '';
 
         // ログの最大数を超えていたら古いログを削除する
         const rows = this.sheet.getLastRow();
@@ -28,17 +31,22 @@ class SheetLogger {
     }
 
     log(text: string) {
-        const date = new Date();
-        const row = [
-            date,
-            text,
-        ];
         if (this.singleLineRange) {
-            const value = this.singleLineRange.getValue() + ' ' + text;
+            const value = this.singleLineRange.getValue() + text;
             this.singleLineRange.setValue(value);
-            return;
+        } else {
+            this.sheet.appendRow([new Date(), text]);
         }
-        this.sheet.appendRow(row);
+    }
+
+    addLine(text?: string) {
+        this.sheet.appendRow([new Date()]);
+        const lastRowNum = this.sheet.getLastRow();
+        const target = this.sheet.getRange(lastRowNum, 2);
+        if (text) {
+            target.setValue(text);
+        }
+        this.singleLineRange = target;
     }
 
     // Logger.log時に呼ばれるようにする
@@ -55,8 +63,8 @@ class SheetLogger {
 
 
 function sheetLoggerTest() {
-    const id=PropertiesService.getScriptProperties().getProperty('TEST_SHEET_ID');
-    if(!id)throw new Error('TEST_SHEET_IDがありません。');
+    const id = PropertiesService.getScriptProperties().getProperty('TEST_SHEET_ID');
+    if (!id) throw new Error('TEST_SHEET_IDがありません。');
 
     const ss = SpreadsheetApp.openById(id);
     const aaa = new SheetLogger({

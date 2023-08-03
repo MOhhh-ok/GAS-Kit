@@ -2,15 +2,17 @@
 class SheetLogger {
     constructor(args) {
         this.singleLineRange = null;
+        this.singleLineSeparator = '';
         if (!args.sheet) {
             throw new Error('sheetがありません。');
         }
         this.sheet = args.sheet;
-        this.singleLine = args.singleLine || false;
-        if (this.singleLine) {
-            this.sheet.appendRow([new Date()]);
-            this.singleLineRange = this.sheet.getRange(1, 2);
+        // シングルラインモード
+        if (args.singleLine) {
+            this.addLine();
         }
+        // シングルラインのセパレータ
+        this.singleLineSeparator = args.singleLineSeparator || '';
         // ログの最大数を超えていたら古いログを削除する
         const rows = this.sheet.getLastRow();
         const maxNum = args.maxNum || 100;
@@ -25,11 +27,21 @@ class SheetLogger {
             text,
         ];
         if (this.singleLineRange) {
-            const value = this.singleLineRange.getValue() + ' ' + text;
+            const value = this.singleLineRange.getValue() + text;
             this.singleLineRange.setValue(value);
-            return;
         }
-        this.sheet.appendRow(row);
+        else {
+            this.sheet.appendRow(row);
+        }
+    }
+    addLine(text) {
+        this.sheet.appendRow([new Date()]);
+        const lastRowNum = this.sheet.getLastRow();
+        const target = this.sheet.getRange(lastRowNum, 2);
+        if (text) {
+            target.setValue(text);
+        }
+        this.singleLineRange = target;
     }
     // Logger.log時に呼ばれるようにする
     hookLogger() {

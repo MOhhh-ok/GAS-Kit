@@ -18,7 +18,11 @@ class SheetLogger {
     }
     log(text) {
         if (this.singleLineRange) {
-            const value = this.singleLineRange.getValue() + text;
+            let value = this.singleLineRange.getValue();
+            if (value) {
+                value += this.singleLineSeparator;
+            }
+            value += text;
             this.singleLineRange.setValue(value);
         }
         else {
@@ -53,7 +57,6 @@ function sheetLoggerTest() {
     const aaa = new SheetLogger({
         sheet: ss.getSheetByName('logs') || ss.insertSheet('logs'),
         maxNum: 10,
-        singleLine: false,
     });
     aaa.hookLogger();
     Logger.log('aiueo');

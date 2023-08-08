@@ -92,15 +92,15 @@ class SheetTable {
     /**
      * オブジェクトリストを指定キーで結合する。外部結合
      */
-    static joinObjects(key, ...objectsList) {
+    static joinObjects(idKey, ...objectsList) {
         objectsList = [...objectsList];
         let result = objectsList.shift() || [];
         result = [...result];
         let objects;
         while (objects = objectsList.shift()) {
-            const map = SheetTable.createMap(key, objects);
+            const map = SheetTable.createMap(idKey, objects);
             for (const obj of result) {
-                const id = obj[key];
+                const id = obj[idKey];
                 if (!id)
                     continue;
                 const obj2 = map.get(String(id)) || {};
@@ -231,7 +231,13 @@ class SheetTable {
     updateObjects(idColName, newObjects, ops) {
         LockService.getScriptLock().waitLock(10000);
         // 既存データと新しいデータを結合
-        const joinedObjects = SheetTable.joinObjects(idColName, this.getObjects(), newObjects);
+        let joinedObjects = SheetTable.joinObjects(idColName, this.getObjects(), newObjects);
+        // 指定があれば
+        if (ops === null || ops === void 0 ? void 0 : ops.deleteNotInUpdated) {
+            // 更新データにないデータを削除する
+            const ids = new Set(newObjects.map(obj => obj[idColName]));
+            joinedObjects = joinedObjects.filter(obj => ids.has(obj[idColName]));
+        }
         // テーブルデータを削除してから追加する
         this.clearBodyContents();
         this.addObjects(joinedObjects, ops);
@@ -307,5 +313,5 @@ function sheetTableTest() {
         { name: 'b', value: 2 },
         { name: 'c', value: 3 },
     ];
-    table.writeNewTable(data);
+    table.updateObjects('name', data, { expand: true, deleteNotInUpdated: true });
 }

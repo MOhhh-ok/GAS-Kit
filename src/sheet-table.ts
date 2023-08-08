@@ -1,7 +1,4 @@
-type SheetTableObject = {
-    [key: string]: any
-
-}
+type SheetTableObject = Record<string, any>;
 
 /**
  * シートをテーブルとして扱うクラス
@@ -120,16 +117,16 @@ class SheetTable {
     /**
      * オブジェクトリストを指定キーで結合する。外部結合
      */
-    static joinObjects(key: keyof SheetTableObject, ...objectsList: SheetTableObject[][]) {
+    static joinObjects(idKey: keyof SheetTableObject, ...objectsList: SheetTableObject[][]) {
         objectsList = [...objectsList];
         let result: SheetTableObject[] = objectsList.shift() || [];
         result = [...result];
 
         let objects;
         while (objects = objectsList.shift()) {
-            const map = SheetTable.createMap(key, objects);
+            const map = SheetTable.createMap(idKey, objects);
             for (const obj of result) {
-                const id = obj[key];
+                const id = obj[idKey];
                 if (!id) continue;
                 const obj2 = map.get(String(id)) || {};
                 map.delete(String(id));
@@ -292,13 +289,21 @@ class SheetTable {
      * IDを基準に全体データを更新する
      */
     updateObjects(idColName: string, newObjects: SheetTableObject[], ops?: {
-        expand?: boolean, // テーブルを拡張するかどうか
+        expand?: boolean, // テーブル列を拡張するかどうか
+        deleteNotInUpdated?: boolean, // 更新データにないデータを削除するかどうか
     }) {
 
         LockService.getScriptLock().waitLock(10000);
 
         // 既存データと新しいデータを結合
-        const joinedObjects = SheetTable.joinObjects(idColName, this.getObjects(), newObjects);
+        let joinedObjects = SheetTable.joinObjects(idColName, this.getObjects(), newObjects);
+
+        // 指定があれば
+        if (ops?.deleteNotInUpdated) {
+            // 更新データにないデータを削除する
+            const ids = new Set(newObjects.map(obj => obj[idColName]));
+            joinedObjects = joinedObjects.filter(obj => ids.has(obj[idColName]));
+        }
 
         // テーブルデータを削除してから追加する
         this.clearBodyContents();
@@ -400,6 +405,6 @@ function sheetTableTest() {
         { name: 'c', value: 3 },
     ];
 
-    table.writeNewTable(data);
+    table.updateObjects('name', data, { expand: true, deleteNotInUpdated: true });
 }
 

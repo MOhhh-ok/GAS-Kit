@@ -270,6 +270,21 @@ class SheetTable {
         range.setValues(newRows);
     }
 
+    createCheckboxInColumn(key: string) {
+        const checkboxValidation
+            = SpreadsheetApp
+                .newDataValidation()
+                .requireCheckbox()
+                .build();
+        this.setDataValidationToColumn(key, checkboxValidation);
+    }
+
+    setDataValidationToColumn(key: string, validation: GoogleAppsScript.Spreadsheet.DataValidation) {
+        const colNum = this.getColNum(key);
+        const range = this.sheet.getRange(this.headRowNum + 1, colNum, this.sheet.getLastRow() - this.headRowNum, 1);
+        range.setDataValidation(validation);
+    }
+
     // 行番号指定でデータを更新する
     updateObject(object: SheetTableObject, row: number) {
 
@@ -408,3 +423,26 @@ function sheetTableTest() {
     table.updateObjects('name', data, { expand: true, deleteNotInUpdated: true });
 }
 
+function sheetTableCheckboxTest() {
+    const prop = PropertiesService.getScriptProperties();
+    const ss = SpreadsheetApp.openById(prop.getProperty('TEST_SHEET_ID') || '');
+    if (!ss) {
+        throw new Error('スプレッドシートが見つかりませんでした。');
+    }
+
+    const sheetName = 'sheetTableTest';
+    const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    const headRowNum = 1;
+
+    const table = new SheetTable({ sheet, headRowNum });
+
+    const data = [
+        { name: 'a', value: true },
+        { name: 'b', value: false },
+        { name: 'c', value: true },
+    ];
+
+    table.writeNewTable(data);
+
+    table.createCheckboxInColumn('value');
+}

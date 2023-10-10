@@ -1,3 +1,5 @@
+/** This is just for debugging Gas-Kit */
+
 class Debugger {
     static getTestSpreadSheet(): GoogleAppsScript.Spreadsheet.Spreadsheet {
         const prop = PropertiesService.getScriptProperties();

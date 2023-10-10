@@ -270,18 +270,36 @@ class SheetTable {
         range.setValues(newRows);
     }
 
-    createCheckboxInColumn(key: string) {
+    /**
+     * 指定列のチェックボックスにできる部分のみチェックボックスにする。
+     * @param key 
+     */
+    createOrRemoveCheckboxInColumn(key: string) {
         const checkboxValidation
             = SpreadsheetApp
                 .newDataValidation()
                 .requireCheckbox()
                 .build();
-        this.setDataValidationToColumn(key, checkboxValidation);
+        const colNum = this.getColNum(key);
+        const from = this.headRowNum + 1;
+        const to = this.sheet.getLastRow();
+
+        for (let i = from; i <= to; i++) {
+            const cell = this.sheet.getRange(i, colNum);
+            const value = cell.getValue();
+            if (value === null || value == '' || typeof (value) == 'boolean') {
+                cell.setDataValidation(checkboxValidation);
+            } else {
+                cell.setDataValidation(null);
+            }
+        }
     }
 
     setDataValidationToColumn(key: string, validation: GoogleAppsScript.Spreadsheet.DataValidation) {
         const colNum = this.getColNum(key);
-        const range = this.sheet.getRange(this.headRowNum + 1, colNum, this.sheet.getLastRow() - this.headRowNum, 1);
+        const from = this.headRowNum + 1;
+        const to = this.sheet.getLastRow() - this.headRowNum;
+        const range = this.sheet.getRange(from, colNum, to, 1);
         range.setDataValidation(validation);
     }
 
@@ -402,14 +420,8 @@ function sheetTableTest2() {
 }
 
 function sheetTableTest() {
-    const prop = PropertiesService.getScriptProperties();
-    const ss = SpreadsheetApp.openById(prop.getProperty('TEST_SHEET_ID') || '');
-    if (!ss) {
-        throw new Error('スプレッドシートが見つかりませんでした。');
-    }
-
     const sheetName = 'sheetTableTest';
-    const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    const sheet = Debugger.getTestSheet(sheetName);
     const headRowNum = 1;
 
     const table = new SheetTable({ sheet, headRowNum });
@@ -424,25 +436,21 @@ function sheetTableTest() {
 }
 
 function sheetTableCheckboxTest() {
-    const prop = PropertiesService.getScriptProperties();
-    const ss = SpreadsheetApp.openById(prop.getProperty('TEST_SHEET_ID') || '');
-    if (!ss) {
-        throw new Error('スプレッドシートが見つかりませんでした。');
-    }
-
     const sheetName = 'sheetTableTest';
-    const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+    const sheet = Debugger.getTestSheet(sheetName);
     const headRowNum = 1;
 
     const table = new SheetTable({ sheet, headRowNum });
 
     const data = [
-        { name: 'a', value: true },
-        { name: 'b', value: false },
-        { name: 'c', value: true },
+        { name: 'true', value: true },
+        { name: 'false', value: false },
+        { name: 'AAA', value: 'AAA' },
+        { name: 'null', value: null },
+        { name: 'blank', value: '' },
+        { name: 'blank', value: '' },
     ];
 
     table.writeNewTable(data);
-
-    table.createCheckboxInColumn('value');
+    table.createOrRemoveCheckboxInColumn('value');
 }
